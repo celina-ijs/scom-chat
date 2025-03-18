@@ -1,0 +1,72 @@
+import { application } from "@ijstech/components";
+import { IChatInfo, INostrMetadata } from "./interface";
+import { getPublicIndexingRelay, getUserProfile } from "./utils";
+
+export class Model {
+    private _data: IChatInfo;
+    private _extensions: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'tiff', 'tif', 'mp4', 'webm', 'ogg', 'avi', 'mkv', 'mov', 'm3u8'];
+    private _isGroup: boolean = false;
+    private _widgetMap: Map<string, any> = new Map(); // eventId: module
+
+    get extensions() {
+        return this._extensions;
+    }
+    
+    get imageExtensions() {
+        return this._extensions.slice(0, 8);
+    }
+
+    get interlocutor() {
+        return this._data.interlocutor;
+    }
+
+    get isGroup() {
+        return this._isGroup;
+    }
+
+    set isGroup(value: boolean) {
+        this._isGroup = value;
+    }
+
+    get metadataByPubKeyMap() {
+        return this._data.metadataByPubKeyMap;
+    }
+
+    set metadataByPubKeyMap(map: Record<string, INostrMetadata>) {
+        this._data.metadataByPubKeyMap = map;
+    }
+
+    get dataManager() {
+        return application.store?.mainDataManager;
+    }
+
+    get widgetMap() {
+        return this._widgetMap;
+    }
+
+    getData() {
+        return this._data;
+    }
+    
+    async setData(value: IChatInfo) {
+        this._data = value;
+    }
+
+    async fetchPaymentReceiptInfo(paymentRequest: string) {
+        const info = await this.dataManager.fetchPaymentReceiptInfo(paymentRequest);
+        return info;
+    }
+
+    async sendTempMessage(receiverId: string, message: string, replyToEventId?: string, widgetId?: string) {
+        const userProfile = getUserProfile();
+        await this.dataManager.sendPingRequest(userProfile.pubkey, getPublicIndexingRelay());
+        const event = await this.dataManager.sendTempMessage({
+            receiverId,
+            message,
+            replyToEventId,
+            widgetId
+        });
+        return event;
+    }
+    
+}

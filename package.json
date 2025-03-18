@@ -1,0 +1,27 @@
+{
+    "name": "@scom/scom-chat",
+    "version": "0.1.0",
+    "main": "dist/index.js",
+    "plugin": "dist",
+    "pluginTypes": "pluginTypes/index.d.ts",
+    "types": "pluginTypes/index.d.ts",
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "scripts": {
+        "build": "rm -rf dist && npx @ijstech/compiler",
+        "serve": "npx @ijstech/cli serve 8080",
+        "test": "cd test && npm run test && cd .."
+    },
+    "dependencies": {
+        "@scom/scom-emoji-picker": "^0.1.3",
+        "@scom/scom-gif-picker": "^0.1.2",
+        "@scom/scom-storage": "^0.1.11",
+        "@scom/scom-social-sdk": "^0.1.60"
+    },
+    "devDependencies": {
+        "@ijstech/cli": "^0.1.26",
+        "@ijstech/compiler": "^0.1.99",
+        "@ijstech/components": "^0.1.29"
+    }
+}

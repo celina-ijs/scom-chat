@@ -1,0 +1,15 @@
+{
+    "name": "@scom/scom-chat",
+    "type": "widget",
+    "version": "0.1.0",
+    "dependencies": [
+        "@ijstech/components",
+        "@scom/scom-signer",
+        "@scom/scom-mqtt",
+        "@scom/scom-social-sdk",
+        "@scom/scom-upload-modal",
+        "@scom/scom-storage",
+        "@scom/scom-emoji-picker",
+        "@scom/scom-gif-picker"
+    ]
+}
