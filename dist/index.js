@@ -799,6 +799,13 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         }
         setData(value) {
             this.model.setData(value);
+            if (!value || !value.messages.length) {
+                this.pnlMessage.clearInnerHTML();
+            }
+            else {
+                let groupedMessage = (0, utils_5.groupMessage)(value.messages);
+                this.renderThread(groupedMessage);
+            }
         }
         getTag() {
             return this.tag;

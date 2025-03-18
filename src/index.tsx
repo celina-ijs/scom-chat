@@ -65,6 +65,12 @@ export class ScomChat extends Module {
     
     setData(value: IChatInfo) {
         this.model.setData(value);
+        if (!value || !value.messages.length) {
+            this.pnlMessage.clearInnerHTML();
+        } else {
+            let groupedMessage = groupMessage(value.messages);
+            this.renderThread(groupedMessage);
+        }
     }
 
     getTag() {
