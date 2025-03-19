@@ -133,7 +133,7 @@ declare module "@scom/scom-chat/components/mediaPreview.tsx" {
 }
 /// <amd-module name="@scom/scom-chat/model.ts" />
 declare module "@scom/scom-chat/model.ts" {
-    import { IChatInfo, IDirectMessage, INostrMetadata } from "@scom/scom-chat/interface.ts";
+    import { IChatInfo, IDirectMessage, IInterlocutorData, INostrMetadata } from "@scom/scom-chat/interface.ts";
     export class Model {
         private _data;
         private _extensions;
@@ -142,7 +142,8 @@ declare module "@scom/scom-chat/model.ts" {
         private _widgetMap;
         get extensions(): string[];
         get imageExtensions(): string[];
-        get interlocutor(): import("@scom/scom-chat/interface.ts").IInterlocutorData;
+        get interlocutor(): IInterlocutorData;
+        set interlocutor(value: IInterlocutorData);
         get isGroup(): boolean;
         set isGroup(value: boolean);
         get isAIChat(): boolean;
@@ -284,7 +285,7 @@ declare module "@scom/scom-chat/data.json.ts" {
 /// <amd-module name="@scom/scom-chat" />
 declare module "@scom/scom-chat" {
     import { ControlElement, Module } from '@ijstech/components';
-    import { IChatInfo, IDirectMessage, INostrMetadata } from "@scom/scom-chat/interface.ts";
+    import { IChatInfo, IDirectMessage, IInterlocutorData, INostrMetadata } from "@scom/scom-chat/interface.ts";
     interface ScomChatElement extends ControlElement {
         isGroup?: boolean;
         isAIChat?: boolean;
@@ -309,9 +310,14 @@ declare module "@scom/scom-chat" {
         private isFetchingMessage;
         onSendMessage: (message: string) => void;
         onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
+        get interlocutor(): IInterlocutorData;
+        set interlocutor(value: IInterlocutorData);
         set messages(value: IDirectMessage[]);
         get oldMessage(): IDirectMessage;
         set oldMessage(msg: IDirectMessage);
+        get metadataByPubKeyMap(): Record<string, INostrMetadata>;
+        set metadataByPubKeyMap(map: Record<string, INostrMetadata>);
+        get widgetMap(): Map<string, any>;
         get isGroup(): boolean;
         set isGroup(value: boolean);
         get isAIChat(): boolean;

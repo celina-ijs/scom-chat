@@ -1,5 +1,5 @@
 import { application } from "@ijstech/components";
-import { IChatInfo, IDirectMessage, INostrMetadata } from "./interface";
+import { IChatInfo, IDirectMessage, IInterlocutorData, INostrMetadata } from "./interface";
 import { getPublicIndexingRelay, getUserProfile } from "./utils";
 
 export class Model {
@@ -19,6 +19,11 @@ export class Model {
 
     get interlocutor() {
         return this._data.interlocutor;
+    }
+
+    set interlocutor(value: IInterlocutorData) {
+        if (!this._data) this._data = { messages: [] };
+        this._data.interlocutor = value || {} as IInterlocutorData;
     }
 
     get isGroup() {
@@ -42,6 +47,7 @@ export class Model {
     }
 
     set messages(value: IDirectMessage[]) {
+        if (!this._data) this._data = { messages: [] };
         this._data.messages = value;
     }
 
@@ -50,6 +56,7 @@ export class Model {
     }
 
     set metadataByPubKeyMap(map: Record<string, INostrMetadata>) {
+        if (!this._data) this._data = { messages: [] };
         this._data.metadataByPubKeyMap = map;
     }
 

@@ -370,6 +370,11 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
         get interlocutor() {
             return this._data.interlocutor;
         }
+        set interlocutor(value) {
+            if (!this._data)
+                this._data = { messages: [] };
+            this._data.interlocutor = value || {};
+        }
         get isGroup() {
             return this._isGroup;
         }
@@ -386,12 +391,16 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
             return this._data.messages;
         }
         set messages(value) {
+            if (!this._data)
+                this._data = { messages: [] };
             this._data.messages = value;
         }
         get metadataByPubKeyMap() {
             return this._data.metadataByPubKeyMap;
         }
         set metadataByPubKeyMap(map) {
+            if (!this._data)
+                this._data = { messages: [] };
             this._data.metadataByPubKeyMap = map;
         }
         get dataManager() {
@@ -847,8 +856,13 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
     exports.ScomChat = void 0;
     const Theme = components_9.Styles.Theme.ThemeVars;
     let ScomChat = class ScomChat extends components_9.Module {
+        get interlocutor() {
+            return this.model.interlocutor;
+        }
+        set interlocutor(value) {
+            this.model.interlocutor = value;
+        }
         set messages(value) {
-            this.model.messages = value;
             if (!value || !value.length) {
                 this.pnlMessage.clearInnerHTML();
             }
@@ -862,6 +876,15 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         }
         set oldMessage(msg) {
             this._oldMessage = msg;
+        }
+        get metadataByPubKeyMap() {
+            return this.model.metadataByPubKeyMap;
+        }
+        set metadataByPubKeyMap(map) {
+            this.model.metadataByPubKeyMap = map;
+        }
+        get widgetMap() {
+            return this.model.widgetMap;
         }
         get isGroup() {
             return this.model.isGroup;

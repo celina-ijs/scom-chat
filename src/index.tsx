@@ -2,7 +2,7 @@ import { ControlElement, customElements, Module, Panel, Styles, VStack } from '@
 import { messagePanelStyle } from './index.css';
 import { LoadingSpinner, ScomChatThread } from './components';
 import { Model } from './model';
-import { IChatInfo, IDirectMessage, IGroupedMessage, INostrMetadata } from './interface';
+import { IChatInfo, IDirectMessage, IGroupedMessage, IInterlocutorData, INostrMetadata } from './interface';
 import { constructMessage, getUserProfile, groupMessage } from './utils';
 import replyData from './data.json';
 
@@ -36,8 +36,15 @@ export class ScomChat extends Module {
     onSendMessage: (message: string) => void;
     onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
 
+    get interlocutor() {
+        return this.model.interlocutor;
+    }
+
+    set interlocutor(value: IInterlocutorData) {
+        this.model.interlocutor = value;
+    }
+
     set messages(value: IDirectMessage[]) {
-        this.model.messages = value;
         if (!value || !value.length) {
             this.pnlMessage.clearInnerHTML();
         } else {
@@ -52,6 +59,18 @@ export class ScomChat extends Module {
 
     set oldMessage(msg: IDirectMessage) {
         this._oldMessage = msg;
+    }
+
+    get metadataByPubKeyMap() {
+        return this.model.metadataByPubKeyMap;
+    }
+
+    set metadataByPubKeyMap(map: Record<string, INostrMetadata>) {
+        this.model.metadataByPubKeyMap = map;
+    }
+
+    get widgetMap() {
+        return this.model.widgetMap;
     }
 
     get isGroup() {
