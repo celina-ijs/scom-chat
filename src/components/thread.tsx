@@ -39,6 +39,10 @@ export class ScomChatThread extends Module {
     set model(value: Model) {
         this._model = value;
     }
+    
+    clear() {
+        this.pnlContent.clearInnerHTML();
+    }
 
     addMessages(pubKey: string, info: IGroupedMessage) {
         let isMyThread = pubKey === info.sender;

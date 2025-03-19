@@ -4,11 +4,13 @@ import { LoadingSpinner, ScomChatThread } from './components';
 import { Model } from './model';
 import { IChatInfo, IDirectMessage, IGroupedMessage, INostrMetadata } from './interface';
 import { constructMessage, getUserProfile, groupMessage } from './utils';
+import replyData from './data.json';
 
 const Theme = Styles.Theme.ThemeVars;
 
 interface ScomChatElement extends ControlElement {
     isGroup?: boolean;
+    isAIChat?: boolean;
     onSendMessage?: (message: string) => void;
     onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
 }
@@ -34,6 +36,16 @@ export class ScomChat extends Module {
     onSendMessage: (message: string) => void;
     onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
 
+    set messages(value: IDirectMessage[]) {
+        this.model.messages = value;
+        if (!value || !value.length) {
+            this.pnlMessage.clearInnerHTML();
+        } else {
+            let groupedMessage = groupMessage(value);
+            this.renderThread(groupedMessage);
+        }
+    }
+
     get oldMessage() {
         return this._oldMessage;
     }
@@ -48,6 +60,14 @@ export class ScomChat extends Module {
 
     set isGroup(value: boolean) {
         this.model.isGroup = value;
+    }
+
+    get isAIChat() {
+        return this.model.isAIChat;
+    }
+
+    set isAIChat(value: boolean) {
+        this.model.isAIChat = value;
     }
 
     constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>) {
@@ -65,12 +85,7 @@ export class ScomChat extends Module {
     
     setData(value: IChatInfo) {
         this.model.setData(value);
-        if (!value || !value.messages.length) {
-            this.pnlMessage.clearInnerHTML();
-        } else {
-            let groupedMessage = groupMessage(value.messages);
-            this.renderThread(groupedMessage);
-        }
+        this.messages = value.messages;
     }
 
     getTag() {
@@ -118,6 +133,7 @@ export class ScomChat extends Module {
             this.pnlMessage.appendChild(thread);
             this.scrollToBottom();
         }
+        return thread;
     }
 
     private handleIntersect(entries: IntersectionObserverEntry[]) {
@@ -162,6 +178,14 @@ export class ScomChat extends Module {
         this.isFetchingMessage = false;
     }
 
+    private _constructMessage(msg: string, createdAt: number) {
+        const messageElementData = this.constructMessage(msg, this.model.metadataByPubKeyMap);
+        return {
+            contentElements: [...messageElementData],
+            createdAt: createdAt
+        };
+    }
+
     private async handleSendMessage(message: string, mediaUrls?: string[], event?: Event) {
         const userProfile = getUserProfile();
         const npub = userProfile?.npub;
@@ -173,16 +197,29 @@ export class ScomChat extends Module {
         const messages = mediaUrls ? [...mediaUrls] : [];
         if (message) messages.push(message);
         for (let msg of messages) {
-            const messageElementData = this.constructMessage(msg, this.model.metadataByPubKeyMap);
-            newMessage.messages.push(
-                {
-                    contentElements: [...messageElementData],
-                    createdAt: createdAt
-                }
-            );
+            newMessage.messages.push(this._constructMessage(msg, createdAt));
             if (this.onSendMessage) this.onSendMessage(msg);
         }
         this.addThread(npub, newMessage);
+        if (this.isAIChat) setTimeout(() => this.handleAutoReply(message), 300);
+    }
+
+    private async handleAutoReply(usermessage: string) {
+        const userProfile = getUserProfile();
+        const npub = userProfile?.npub;
+        const createdAt = Math.round(Date.now() / 1000);
+        let groupedMessage: IGroupedMessage = {
+            messages: [this._constructMessage("Typing...", createdAt)],
+            sender: this.model.interlocutor.id || "npub123"
+        };
+        const message = usermessage.trim().toLowerCase();
+        const thread = await this.addThread(npub, groupedMessage);
+        setTimeout(() => {
+            thread.clear();
+            const reply = replyData[message] || "I couldn't find the specific information you're looking for.\nThis might be due to the complexity of the question, outdated information, or limitations in my current knowledge base.";
+            groupedMessage.messages = [this._constructMessage(reply, createdAt)];
+            thread.addMessages(npub, groupedMessage);
+        }, 700);
     }
 
     init() {
@@ -190,6 +227,8 @@ export class ScomChat extends Module {
         super.init();
         const isGroup = this.getAttribute('isGroup', true);
         if (isGroup != null) this.isGroup = isGroup;
+        const isAIChat = this.getAttribute('isAIChat', true);
+        if (isAIChat != null) this.isAIChat = isAIChat;
         this.observer = new IntersectionObserver(this.handleIntersect.bind(this));
         this.observer.observe(this.pnlMessageTop);
     }

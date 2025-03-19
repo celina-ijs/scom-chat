@@ -51,7 +51,7 @@ export interface IInterlocutorData {
 }
 
 export interface IChatInfo {
-    interlocutor: IInterlocutorData;
+    interlocutor?: IInterlocutorData;
     messages: IDirectMessage[];
     metadataByPubKeyMap?: Record<string, INostrMetadata>;
 }

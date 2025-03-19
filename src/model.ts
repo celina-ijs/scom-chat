@@ -1,11 +1,12 @@
 import { application } from "@ijstech/components";
-import { IChatInfo, INostrMetadata } from "./interface";
+import { IChatInfo, IDirectMessage, INostrMetadata } from "./interface";
 import { getPublicIndexingRelay, getUserProfile } from "./utils";
 
 export class Model {
     private _data: IChatInfo;
     private _extensions: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'tiff', 'tif', 'mp4', 'webm', 'ogg', 'avi', 'mkv', 'mov', 'm3u8'];
     private _isGroup: boolean = false;
+    private _isAIChat: boolean = false;
     private _widgetMap: Map<string, any> = new Map(); // eventId: module
 
     get extensions() {
@@ -26,6 +27,22 @@ export class Model {
 
     set isGroup(value: boolean) {
         this._isGroup = value;
+    }
+
+    get isAIChat() {
+        return this._isAIChat;
+    }
+
+    set isAIChat(value: boolean) {
+        this._isAIChat = value;
+    }
+
+    get messages() {
+        return this._data.messages;
+    }
+
+    set messages(value: IDirectMessage[]) {
+        this._data.messages = value;
     }
 
     get metadataByPubKeyMap() {

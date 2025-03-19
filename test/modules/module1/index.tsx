@@ -21,24 +21,7 @@ export default class Module1 extends Module {
             interlocutor: {
                 id: 'npub123'
             },
-            messages: [
-                {
-                    id: 'msgId1',
-                    pubKey: 'user1',
-                    sender: 'npub123',
-                    createdAt: 1739435155,
-                    contentElements: [
-                        {
-                            module: undefined,
-                            data: {
-                                properties: {
-                                    content: "hi"
-                                }
-                            }
-                        }
-                    ]
-                }
-            ],
+            messages: [],
             metadataByPubKeyMap: {
                 'user1': {
                     "kind": 0,
@@ -62,7 +45,7 @@ export default class Module1 extends Module {
     render() {
         <i-panel width="100%" height="100%">
             <i-vstack width="100%" height="100%" padding={{ top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }} gap="1rem">
-                <i-scom-chat id="scomChat" width="100%" height="100%" border={{ width: 1, style: 'solid', color: Theme.divider }}></i-scom-chat>
+                <i-scom-chat id="scomChat" width="100%" height="100%" border={{ width: 1, style: 'solid', color: Theme.divider }} isAIChat={true}></i-scom-chat>
             </i-vstack>
         </i-panel>
     }

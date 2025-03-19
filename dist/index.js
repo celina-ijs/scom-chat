@@ -358,6 +358,7 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
         constructor() {
             this._extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'tiff', 'tif', 'mp4', 'webm', 'ogg', 'avi', 'mkv', 'mov', 'm3u8'];
             this._isGroup = false;
+            this._isAIChat = false;
             this._widgetMap = new Map(); // eventId: module
         }
         get extensions() {
@@ -374,6 +375,18 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
         }
         set isGroup(value) {
             this._isGroup = value;
+        }
+        get isAIChat() {
+            return this._isAIChat;
+        }
+        set isAIChat(value) {
+            this._isAIChat = value;
+        }
+        get messages() {
+            return this._data.messages;
+        }
+        set messages(value) {
+            this._data.messages = value;
         }
         get metadataByPubKeyMap() {
             return this._data.metadataByPubKeyMap;
@@ -651,6 +664,9 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
         set model(value) {
             this._model = value;
         }
+        clear() {
+            this.pnlContent.clearInnerHTML();
+        }
         addMessages(pubKey, info) {
             let isMyThread = pubKey === info.sender;
             this.pnlThread.padding = this.model.isGroup ? { left: '2.25rem', bottom: "1rem" } : { bottom: "1rem" };
@@ -806,12 +822,41 @@ define("@scom/scom-chat/components/index.ts", ["require", "exports", "@scom/scom
     Object.defineProperty(exports, "ScomChatMessageComposer", { enumerable: true, get: function () { return messageComposer_1.ScomChatMessageComposer; } });
     Object.defineProperty(exports, "ScomChatThread", { enumerable: true, get: function () { return thread_1.ScomChatThread; } });
 });
-define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/components/index.ts", "@scom/scom-chat/model.ts", "@scom/scom-chat/utils.ts"], function (require, exports, components_9, index_css_3, components_10, model_1, utils_5) {
+define("@scom/scom-chat/data.json.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ///<amd-module name='@scom/scom-chat/data.json.ts'/> 
+    exports.default = {
+        "hi": `Hello! How can I assist you today? ${String.fromCodePoint(0x1F60A)}`,
+        "hello": `Hello! ${String.fromCodePoint(0x1F60A)} How are you doing today?`,
+        "bye": "Bye! If you have any more questions or need assistance in the future, don't hesitate to reach out. Have a great day!",
+        "goodbye": "Goodbye! It was nice chatting with you. Take care and feel free to come back if you need anything else. Have a wonderful day!",
+        "joke": `Why couldn't the bicycle stand up by itself?\nBecause it was two-tired! ${String.fromCodePoint(0x1F604)}`,
+        "funny one-liner": `"I told my wife she was drawing her eyebrows too high. She looked surprised." ${String.fromCodePoint(0x1F604)}`,
+        "trending now": "1. Delhi Man Regrets Moving to Canada: A man from Delhi shared his disappointing experience of moving to Canada, stating that the Western lifestyle was not as fulfilling as he expected.\n\n2. Trending News in Telugu: TV9 Telugu is covering various trending news stories, including a complaint filed by an MP regarding the suppression of SC community representatives' rights and a red corner notice issued against certain individuals. Additionally, there is an ongoing investigation into betting apps and their promotion.\n\n3. Protests Against Liquor Prices: There are demands for the government to shut down belt shops due to allegations of illegal price fixing by liquor syndicates, leading to protests and arrests.\n\n4. Betting Apps Investigation: Police are increasing surveillance on individuals promoting betting apps, with potential legal actions against those involved.",
+        "what is the largest mammal on earth?": "The blue whale.",
+        "what is the fastest land animal?": "The cheetah",
+        "what is the the only bird that can fly backward?": `The hummingbird! ${String.fromCodePoint(0x1F338)}${String.fromCodePoint(0x1F426)}`,
+        "what is the most spoken language in the world?": `Mandarin Chinese! ${String.fromCodePoint(0x1F30F)}`,
+        "what gets wetter the more it dries?": `A towel! ${String.fromCodePoint(0x1F9FA)}${String.fromCodePoint(0x1F4A6)}`,
+    };
+});
+define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/components/index.ts", "@scom/scom-chat/model.ts", "@scom/scom-chat/utils.ts", "@scom/scom-chat/data.json.ts"], function (require, exports, components_9, index_css_3, components_10, model_1, utils_5, data_json_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomChat = void 0;
     const Theme = components_9.Styles.Theme.ThemeVars;
     let ScomChat = class ScomChat extends components_9.Module {
+        set messages(value) {
+            this.model.messages = value;
+            if (!value || !value.length) {
+                this.pnlMessage.clearInnerHTML();
+            }
+            else {
+                let groupedMessage = (0, utils_5.groupMessage)(value);
+                this.renderThread(groupedMessage);
+            }
+        }
         get oldMessage() {
             return this._oldMessage;
         }
@@ -823,6 +868,12 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         }
         set isGroup(value) {
             this.model.isGroup = value;
+        }
+        get isAIChat() {
+            return this.model.isAIChat;
+        }
+        set isAIChat(value) {
+            this.model.isAIChat = value;
         }
         constructMessage(content, metadataByPubKeyMap) {
             return (0, utils_5.constructMessage)(content, metadataByPubKeyMap);
@@ -836,13 +887,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         }
         setData(value) {
             this.model.setData(value);
-            if (!value || !value.messages.length) {
-                this.pnlMessage.clearInnerHTML();
-            }
-            else {
-                let groupedMessage = (0, utils_5.groupMessage)(value.messages);
-                this.renderThread(groupedMessage);
-            }
+            this.messages = value.messages;
         }
         getTag() {
             return this.tag;
@@ -886,6 +931,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                 this.pnlMessage.appendChild(thread);
                 this.scrollToBottom();
             }
+            return thread;
         }
         handleIntersect(entries) {
             entries.forEach(entry => {
@@ -929,6 +975,13 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             this.loadingSpinner.display = 'none';
             this.isFetchingMessage = false;
         }
+        _constructMessage(msg, createdAt) {
+            const messageElementData = this.constructMessage(msg, this.model.metadataByPubKeyMap);
+            return {
+                contentElements: [...messageElementData],
+                createdAt: createdAt
+            };
+        }
         async handleSendMessage(message, mediaUrls, event) {
             const userProfile = (0, utils_5.getUserProfile)();
             const npub = userProfile?.npub;
@@ -941,15 +994,30 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             if (message)
                 messages.push(message);
             for (let msg of messages) {
-                const messageElementData = this.constructMessage(msg, this.model.metadataByPubKeyMap);
-                newMessage.messages.push({
-                    contentElements: [...messageElementData],
-                    createdAt: createdAt
-                });
+                newMessage.messages.push(this._constructMessage(msg, createdAt));
                 if (this.onSendMessage)
                     this.onSendMessage(msg);
             }
             this.addThread(npub, newMessage);
+            if (this.isAIChat)
+                setTimeout(() => this.handleAutoReply(message), 300);
+        }
+        async handleAutoReply(usermessage) {
+            const userProfile = (0, utils_5.getUserProfile)();
+            const npub = userProfile?.npub;
+            const createdAt = Math.round(Date.now() / 1000);
+            let groupedMessage = {
+                messages: [this._constructMessage("Typing...", createdAt)],
+                sender: this.model.interlocutor.id || "npub123"
+            };
+            const message = usermessage.trim().toLowerCase();
+            const thread = await this.addThread(npub, groupedMessage);
+            setTimeout(() => {
+                thread.clear();
+                const reply = data_json_1.default[message] || "I couldn't find the specific information you're looking for.\nThis might be due to the complexity of the question, outdated information, or limitations in my current knowledge base.";
+                groupedMessage.messages = [this._constructMessage(reply, createdAt)];
+                thread.addMessages(npub, groupedMessage);
+            }, 700);
         }
         init() {
             this.model = new model_1.Model();
@@ -957,6 +1025,9 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             const isGroup = this.getAttribute('isGroup', true);
             if (isGroup != null)
                 this.isGroup = isGroup;
+            const isAIChat = this.getAttribute('isAIChat', true);
+            if (isAIChat != null)
+                this.isAIChat = isAIChat;
             this.observer = new IntersectionObserver(this.handleIntersect.bind(this));
             this.observer.observe(this.pnlMessageTop);
         }

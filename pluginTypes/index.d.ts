@@ -81,7 +81,7 @@ declare module "@scom/scom-chat/interface.ts" {
         channelInfo?: IChannelInfo;
     }
     export interface IChatInfo {
-        interlocutor: IInterlocutorData;
+        interlocutor?: IInterlocutorData;
         messages: IDirectMessage[];
         metadataByPubKeyMap?: Record<string, INostrMetadata>;
     }
@@ -133,17 +133,22 @@ declare module "@scom/scom-chat/components/mediaPreview.tsx" {
 }
 /// <amd-module name="@scom/scom-chat/model.ts" />
 declare module "@scom/scom-chat/model.ts" {
-    import { IChatInfo, INostrMetadata } from "@scom/scom-chat/interface.ts";
+    import { IChatInfo, IDirectMessage, INostrMetadata } from "@scom/scom-chat/interface.ts";
     export class Model {
         private _data;
         private _extensions;
         private _isGroup;
+        private _isAIChat;
         private _widgetMap;
         get extensions(): string[];
         get imageExtensions(): string[];
         get interlocutor(): import("@scom/scom-chat/interface.ts").IInterlocutorData;
         get isGroup(): boolean;
         set isGroup(value: boolean);
+        get isAIChat(): boolean;
+        set isAIChat(value: boolean);
+        get messages(): IDirectMessage[];
+        set messages(value: IDirectMessage[]);
         get metadataByPubKeyMap(): Record<string, INostrMetadata>;
         set metadataByPubKeyMap(map: Record<string, INostrMetadata>);
         get dataManager(): any;
@@ -226,6 +231,7 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         OnContentRendered: () => void;
         get model(): Model;
         set model(value: Model);
+        clear(): void;
         addMessages(pubKey: string, info: IGroupedMessage): void;
         private renderMessages;
         init(): void;
@@ -257,12 +263,31 @@ declare module "@scom/scom-chat/components/index.ts" {
     export { ScomChatMessageComposer } from "@scom/scom-chat/components/messageComposer.tsx";
     export { ScomChatThread } from "@scom/scom-chat/components/thread.tsx";
 }
+/// <amd-module name="@scom/scom-chat/data.json.ts" />
+declare module "@scom/scom-chat/data.json.ts" {
+    const _default_1: {
+        hi: string;
+        hello: string;
+        bye: string;
+        goodbye: string;
+        joke: string;
+        "funny one-liner": string;
+        "trending now": string;
+        "what is the largest mammal on earth?": string;
+        "what is the fastest land animal?": string;
+        "what is the the only bird that can fly backward?": string;
+        "what is the most spoken language in the world?": string;
+        "what gets wetter the more it dries?": string;
+    };
+    export default _default_1;
+}
 /// <amd-module name="@scom/scom-chat" />
 declare module "@scom/scom-chat" {
     import { ControlElement, Module } from '@ijstech/components';
     import { IChatInfo, IDirectMessage, INostrMetadata } from "@scom/scom-chat/interface.ts";
     interface ScomChatElement extends ControlElement {
         isGroup?: boolean;
+        isAIChat?: boolean;
         onSendMessage?: (message: string) => void;
         onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     }
@@ -284,10 +309,13 @@ declare module "@scom/scom-chat" {
         private isFetchingMessage;
         onSendMessage: (message: string) => void;
         onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
+        set messages(value: IDirectMessage[]);
         get oldMessage(): IDirectMessage;
         set oldMessage(msg: IDirectMessage);
         get isGroup(): boolean;
         set isGroup(value: boolean);
+        get isAIChat(): boolean;
+        set isAIChat(value: boolean);
         constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>): any[];
         clear(): void;
         getData(): IChatInfo;
@@ -301,7 +329,9 @@ declare module "@scom/scom-chat" {
         private handleIntersect;
         private showLoadingSpinner;
         private fetchOldMessages;
+        private _constructMessage;
         private handleSendMessage;
+        private handleAutoReply;
         init(): void;
         render(): any;
     }
