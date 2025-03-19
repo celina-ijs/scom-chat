@@ -1,4 +1,5 @@
 import { application, Control, Label, moment, Styles } from "@ijstech/components";
+import { INostrEvent, INostrMetadata } from "@scom/scom-social-sdk";
 import { IDirectMessage, IGroupedMessage, IPostData } from "./interface";
 
 const Theme = Styles.Theme.ThemeVars;
@@ -146,4 +147,36 @@ export function groupMessage(messages: IDirectMessage[]) {
         pubKey = msg.sender;
     }
     return groupedMessage;
+}
+
+function createTextElement(text: string, isMarkdown: boolean = false) {
+    return {
+        module: isMarkdown ? '@scom/scom-markdown-editor' : null,
+        data: {
+            properties: {
+                content: text,
+            },
+            tag: {
+                width: '100%',
+                pt: 0,
+                pb: 0,
+                pl: 0,
+                pr: 0,
+            },
+        },
+    };
+}
+
+function extractMediaFromContent(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>, eventData?: INostrEvent) {
+    const elements: any[] = [];
+    let textContent = content.slice();
+    if (textContent.trim().length > 0) {
+        elements.push(createTextElement(textContent));
+    }
+    return elements;
+}
+
+export function constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>) {
+    const messageElementData = extractMediaFromContent(content, metadataByPubKeyMap);
+    return messageElementData;
 }

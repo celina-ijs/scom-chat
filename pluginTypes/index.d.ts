@@ -93,6 +93,7 @@ declare module "@scom/scom-chat/interface.ts" {
 /// <amd-module name="@scom/scom-chat/utils.ts" />
 declare module "@scom/scom-chat/utils.ts" {
     import { Control } from "@ijstech/components";
+    import { INostrMetadata } from "@scom/scom-social-sdk";
     import { IDirectMessage, IGroupedMessage, IPostData } from "@scom/scom-chat/interface.ts";
     export function isDevEnv(): boolean;
     export function getUserProfile(): any;
@@ -101,6 +102,7 @@ declare module "@scom/scom-chat/utils.ts" {
     export function getEmbedElement(postData: IPostData, parent: Control, callback?: any): Promise<any>;
     export function createLabelElements(text: string, styles?: any): Control[];
     export function groupMessage(messages: IDirectMessage[]): IGroupedMessage[];
+    export function constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>): any[];
 }
 /// <amd-module name="@scom/scom-chat/components/mediaPreview.tsx" />
 declare module "@scom/scom-chat/components/mediaPreview.tsx" {
@@ -221,7 +223,7 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         private pnlThread;
         private pnlContent;
         private _model;
-        onEmbedElement: (elm: any) => void;
+        OnContentRendered: () => void;
         get model(): Model;
         set model(value: Model);
         addMessages(pubKey: string, info: IGroupedMessage): void;
@@ -233,13 +235,13 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         private pnlThreadMessage;
         private pnlMessage;
         private _model;
-        onEmbedElement: (elm: any) => void;
+        OnContentRendered: () => void;
         get model(): Model;
         set model(value: Model);
         setData(sender: string, pubKey: string, message: {
             contentElements: IPostData[];
             createdAt: number;
-        }, showUserInfo: boolean): void;
+        }, isMyThread: boolean, showUserInfo: boolean): void;
         private renderAvatar;
         private appendLabel;
         private renderMessageContent;
@@ -262,7 +264,7 @@ declare module "@scom/scom-chat" {
     interface ScomChatElement extends ControlElement {
         isGroup?: boolean;
         onSendMessage?: (message: string) => void;
-        onFetchMessage?: (since?: number, until?: number) => void;
+        onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     }
     global {
         namespace JSX {

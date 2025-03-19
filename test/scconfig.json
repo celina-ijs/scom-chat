@@ -1,0 +1,52 @@
+{
+  "env": "testnet",
+  "main": "@modules/module1",
+  "bundle": true,
+  "moduleDir": "modules",
+  "modules": {
+    "@modules/module1": {
+      "path": "module1"
+    }
+  },
+  "dependencies": {
+    "@scom/scom-chat": "*"
+  },
+  "menus": [
+  ],
+  "routes": [
+    {
+      "url": "/module1",
+      "module": "@modules/module1",
+      "default": true
+    }
+  ],
+  "nostr": {
+      "version": 1.5,
+      "writeRelays": [
+          {
+              "url": "https://relay.decom.app/api/v1"
+          },
+          {
+              "url": "wss://relay.primal.net"
+          },
+          {
+              "url": "wss://nos.lol"
+          },
+          {
+              "url": "wss://relay.damus.io"
+          }
+      ],
+      "publicIndexingRelay": "https://relay.decom.app/api/v1",
+      "mqttBrokerUrl_bak": "wss://broker.emqx.io:8084/mqtt",
+      "mqttBrokerUrl_bak2": "wss://broker.hivemq.com:8884/mqtt",
+      "mqttBrokerUrl": "wss://85919c14d7de4c03bb9e6ef0a5bde373.s1.eu.hivemq.cloud:8884/mqtt",
+      "mqttClientOptions": {
+          "username": "sc-test-subscribe",
+          "password": "BQKuebFzGD9byLI"
+      },
+      "mqttPublicTopic": "nostr-public",
+      "mqttPrivateTopic": "nostr-private",
+      "apiUrl": "/api/social/v0",
+      "ipLocationServiceBaseUrl": "https://geolookup.decom.app/"
+  }
+}

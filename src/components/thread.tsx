@@ -30,7 +30,7 @@ export class ScomChatThread extends Module {
     private pnlThread: VStack;
     private pnlContent: VStack;
     private _model: Model;
-    onEmbedElement:(elm: any) => void;
+    OnContentRendered:() => void;
 
     get model() {
         return this._model;
@@ -48,19 +48,21 @@ export class ScomChatThread extends Module {
         this.renderMessages(info, isMyThread, this.model.isGroup);
     }
 
-    private renderMessages(info: IGroupedMessage, isMyThread: boolean, isGroup: boolean) {
+    private async renderMessages(info: IGroupedMessage, isMyThread: boolean, isGroup: boolean) {
         const messages = info.messages;
         let showUserInfo = isGroup && !isMyThread;
         for (let i = 0; i < messages.length; i++) {
             const showMessageTime = messages[i + 1] ? moment.unix(messages[i + 1].createdAt).diff(moment.unix(messages[i].createdAt)) > 60000 : true;
             const threadMessage = new ScomChatThreadMessage();
-            threadMessage.onEmbedElement = this.onEmbedElement;
+            threadMessage.OnContentRendered = this.OnContentRendered;
             this.pnlContent.appendChild(threadMessage);
-            threadMessage.setData(info.sender, info.pubKey, messages[i], showUserInfo);
+            await threadMessage.ready();
+            threadMessage.setData(info.sender, info.pubKey, messages[i], isMyThread, showUserInfo);
             if (showMessageTime) {
                 const msgTime = getMessageTime(messages[i].createdAt);
                 this.pnlContent.appendChild(<i-label caption={msgTime} font={{ size: '0.8125rem', color: Theme.text.secondary }} lineHeight="1.25rem"></i-label>);
             }
+            if (this.OnContentRendered) this.OnContentRendered();
             showUserInfo = false;
         }
     }
@@ -96,7 +98,7 @@ export class ScomChatThreadMessage extends Module {
     private pnlThreadMessage: HStack;
     private pnlMessage: VStack;
     private _model: Model;
-    onEmbedElement:(elm: any) => void;
+    OnContentRendered:() => void;
 
     get model() {
         return this._model;
@@ -106,7 +108,9 @@ export class ScomChatThreadMessage extends Module {
         this._model = value;
     }
 
-    setData(sender: string, pubKey: string, message: { contentElements: IPostData[]; createdAt: number; }, showUserInfo: boolean) {
+    setData(sender: string, pubKey: string, message: { contentElements: IPostData[]; createdAt: number; }, isMyThread: boolean, showUserInfo: boolean) {
+        this.pnlMessage.border = { radius: isMyThread ? "16px 16px 2px 16px" : "16px 16px 16px 2px" };
+        this.pnlMessage.background = { color: isMyThread ? "#B14FFF" : Theme.colors.secondary.main };
         if (showUserInfo) {
             const content = this.model.metadataByPubKeyMap[pubKey].content;
             this.pnlThreadMessage.prepend(this.renderAvatar(sender, content.picture));
@@ -181,7 +185,7 @@ export class ScomChatThreadMessage extends Module {
                             } else if (item.module === 'checkout-message') {
                                 elm.setData(item.data.properties, message.createdAt);
                             }
-                            if (this.onEmbedElement) this.onEmbedElement(elm);
+                            if (this.OnContentRendered) this.OnContentRendered();
                         });
                         if (item.module !== '@scom/scom-markdown-editor') {
                             this.pnlThreadMessage.stack = { grow: "1", shrink: "1", basis: "0" };
@@ -189,6 +193,7 @@ export class ScomChatThreadMessage extends Module {
                     } else {
                         let content: string = item?.data?.properties?.content || '';
                         this.appendLabel(this.pnlMessage, content);
+                        if (this.OnContentRendered) this.OnContentRendered();
                     }
                 }
             }

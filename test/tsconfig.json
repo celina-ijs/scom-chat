@@ -1,0 +1,21 @@
+{    
+    "compilerOptions": {
+        "target": "ES2017",        
+        "moduleResolution": "Node",
+        "experimentalDecorators": true,        
+        "jsx": "preserve",      
+        "jsxFactory": "this.$render",
+        "jsxFragmentFactory": "this.$render",
+        "esModuleInterop": true,        
+        "forceConsistentCasingInFileNames": true,        
+        "declaration": false,        
+        "baseUrl": ".",
+        "paths": {
+            "@ijstech/components": ["node_modules/@ijstech/components"],
+            "@modules/*": ["modules/*"],
+            "@scom/scom-chat": ["ref"]
+        }
+    },
+    "include": ["modules/**/*.ts","modules/**/*.tsx"],
+    "exclude": ["node_modules"]
+}

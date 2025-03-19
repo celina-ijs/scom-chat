@@ -1,0 +1,22 @@
+{
+    "name": "@scom/demo-scom-chat",
+    "version": "0.1.0",
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "dependencies": {
+        "@ijstech/components": "^0.1.47"
+    },
+    "devDependencies": {
+        "@ijstech/cli": "^0.1.28",
+        "@ijstech/compiler": "^0.1.22",
+        "@scom/scom-widget-test": "^0.1.1",
+        "@scom/scom-chat": "file:./ref"
+    },
+    "scripts": {
+        "cp:libs": "rm -rf ref && mkdir ref && cp ../package.json ref/package.json && cp -r ../dist ref/dist && cp -r ../pluginTypes ref/pluginTypes && cp -r ../pluginTypes ref/types",
+        "build": "npm run cp:libs && rm -rf dist && npx @ijstech/compiler",
+        "serve": "npx @ijstech/cli serve 8030",
+        "test": "npm run build && npm run serve"
+    }
+}

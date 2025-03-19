@@ -113,7 +113,7 @@ define("@scom/scom-chat/interface.ts", ["require", "exports"], function (require
 define("@scom/scom-chat/utils.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.groupMessage = exports.createLabelElements = exports.getEmbedElement = exports.getMessageTime = exports.getPublicIndexingRelay = exports.getUserProfile = exports.isDevEnv = void 0;
+    exports.constructMessage = exports.groupMessage = exports.createLabelElements = exports.getEmbedElement = exports.getMessageTime = exports.getPublicIndexingRelay = exports.getUserProfile = exports.isDevEnv = void 0;
     const Theme = components_3.Styles.Theme.ThemeVars;
     function isDevEnv() {
         return components_3.application.store.env === 'dev';
@@ -259,6 +259,36 @@ define("@scom/scom-chat/utils.ts", ["require", "exports", "@ijstech/components"]
         return groupedMessage;
     }
     exports.groupMessage = groupMessage;
+    function createTextElement(text, isMarkdown = false) {
+        return {
+            module: isMarkdown ? '@scom/scom-markdown-editor' : null,
+            data: {
+                properties: {
+                    content: text,
+                },
+                tag: {
+                    width: '100%',
+                    pt: 0,
+                    pb: 0,
+                    pl: 0,
+                    pr: 0,
+                },
+            },
+        };
+    }
+    function extractMediaFromContent(content, metadataByPubKeyMap, eventData) {
+        const elements = [];
+        let textContent = content.slice();
+        if (textContent.trim().length > 0) {
+            elements.push(createTextElement(textContent));
+        }
+        return elements;
+    }
+    function constructMessage(content, metadataByPubKeyMap) {
+        const messageElementData = extractMediaFromContent(content, metadataByPubKeyMap);
+        return messageElementData;
+    }
+    exports.constructMessage = constructMessage;
 });
 define("@scom/scom-chat/components/mediaPreview.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-chat/interface.ts", "@scom/scom-chat/utils.ts"], function (require, exports, components_4, interface_1, utils_1) {
     "use strict";
@@ -628,19 +658,22 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
             this.pnlContent.alignItems = isMyThread ? "end" : "start";
             this.renderMessages(info, isMyThread, this.model.isGroup);
         }
-        renderMessages(info, isMyThread, isGroup) {
+        async renderMessages(info, isMyThread, isGroup) {
             const messages = info.messages;
             let showUserInfo = isGroup && !isMyThread;
             for (let i = 0; i < messages.length; i++) {
                 const showMessageTime = messages[i + 1] ? components_8.moment.unix(messages[i + 1].createdAt).diff(components_8.moment.unix(messages[i].createdAt)) > 60000 : true;
                 const threadMessage = new ScomChatThreadMessage();
-                threadMessage.onEmbedElement = this.onEmbedElement;
+                threadMessage.OnContentRendered = this.OnContentRendered;
                 this.pnlContent.appendChild(threadMessage);
-                threadMessage.setData(info.sender, info.pubKey, messages[i], showUserInfo);
+                await threadMessage.ready();
+                threadMessage.setData(info.sender, info.pubKey, messages[i], isMyThread, showUserInfo);
                 if (showMessageTime) {
                     const msgTime = (0, utils_4.getMessageTime)(messages[i].createdAt);
                     this.pnlContent.appendChild(this.$render("i-label", { caption: msgTime, font: { size: '0.8125rem', color: Theme.text.secondary }, lineHeight: "1.25rem" }));
                 }
+                if (this.OnContentRendered)
+                    this.OnContentRendered();
                 showUserInfo = false;
             }
         }
@@ -670,7 +703,9 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
         set model(value) {
             this._model = value;
         }
-        setData(sender, pubKey, message, showUserInfo) {
+        setData(sender, pubKey, message, isMyThread, showUserInfo) {
+            this.pnlMessage.border = { radius: isMyThread ? "16px 16px 2px 16px" : "16px 16px 16px 2px" };
+            this.pnlMessage.background = { color: isMyThread ? "#B14FFF" : Theme.colors.secondary.main };
             if (showUserInfo) {
                 const content = this.model.metadataByPubKeyMap[pubKey].content;
                 this.pnlThreadMessage.prepend(this.renderAvatar(sender, content.picture));
@@ -726,8 +761,8 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                                 else if (item.module === 'checkout-message') {
                                     elm.setData(item.data.properties, message.createdAt);
                                 }
-                                if (this.onEmbedElement)
-                                    this.onEmbedElement(elm);
+                                if (this.OnContentRendered)
+                                    this.OnContentRendered();
                             });
                             if (item.module !== '@scom/scom-markdown-editor') {
                                 this.pnlThreadMessage.stack = { grow: "1", shrink: "1", basis: "0" };
@@ -736,6 +771,8 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                         else {
                             let content = item?.data?.properties?.content || '';
                             this.appendLabel(this.pnlMessage, content);
+                            if (this.OnContentRendered)
+                                this.OnContentRendered();
                         }
                     }
                 }
@@ -788,7 +825,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             this.model.isGroup = value;
         }
         constructMessage(content, metadataByPubKeyMap) {
-            return [];
+            return (0, utils_5.constructMessage)(content, metadataByPubKeyMap);
         }
         clear() {
             this.oldMessage = null;
@@ -834,13 +871,14 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                 this.addThread(npub, info);
             }
         }
-        addThread(pubKey, info, isPrepend) {
+        async addThread(pubKey, info, isPrepend) {
             const thread = new components_10.ScomChatThread();
             thread.model = this.model;
-            thread.onEmbedElement = () => {
+            thread.OnContentRendered = () => {
                 if (!isPrepend)
                     this.scrollToBottom();
             };
+            await thread.ready();
             thread.addMessages(pubKey, info);
             if (isPrepend)
                 this.pnlMessage.prepend(thread);

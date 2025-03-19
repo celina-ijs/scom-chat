@@ -3,14 +3,14 @@ import { messagePanelStyle } from './index.css';
 import { LoadingSpinner, ScomChatThread } from './components';
 import { Model } from './model';
 import { IChatInfo, IDirectMessage, IGroupedMessage, INostrMetadata } from './interface';
-import { getUserProfile, groupMessage } from './utils';
+import { constructMessage, getUserProfile, groupMessage } from './utils';
 
 const Theme = Styles.Theme.ThemeVars;
 
 interface ScomChatElement extends ControlElement {
     isGroup?: boolean;
     onSendMessage?: (message: string) => void;
-    onFetchMessage?: (since?: number, until?: number) => void;
+    onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
 }
 
 declare global {
@@ -51,7 +51,7 @@ export class ScomChat extends Module {
     }
 
     constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>) {
-        return [];
+        return constructMessage(content, metadataByPubKeyMap);
     }
     
     clear() {
@@ -104,12 +104,13 @@ export class ScomChat extends Module {
         }
     }
 
-    private addThread(pubKey: string, info: IGroupedMessage, isPrepend?: boolean) {
+    private async addThread(pubKey: string, info: IGroupedMessage, isPrepend?: boolean) {
         const thread = new ScomChatThread();
         thread.model = this.model;
-        thread.onEmbedElement = () => {
+        thread.OnContentRendered = () => {
             if (!isPrepend) this.scrollToBottom();
         }
+        await thread.ready();
         thread.addMessages(pubKey, info);
         if (isPrepend)
             this.pnlMessage.prepend(thread);
