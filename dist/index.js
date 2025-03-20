@@ -688,8 +688,9 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
             let showUserInfo = isGroup && !isMyThread;
             for (let i = 0; i < messages.length; i++) {
                 const showMessageTime = messages[i + 1] ? components_8.moment.unix(messages[i + 1].createdAt).diff(components_8.moment.unix(messages[i].createdAt)) > 60000 : true;
-                const threadMessage = new ScomChatThreadMessage();
-                threadMessage.OnContentRendered = this.OnContentRendered;
+                const threadMessage = new ScomChatThreadMessage(undefined, { width: '100%' });
+                threadMessage.model = this.model;
+                threadMessage.onContentRendered = this.onContentRendered;
                 this.pnlContent.appendChild(threadMessage);
                 await threadMessage.ready();
                 threadMessage.setData(info.sender, info.pubKey, messages[i], isMyThread, showUserInfo);
@@ -697,8 +698,8 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                     const msgTime = (0, utils_4.getMessageTime)(messages[i].createdAt);
                     this.pnlContent.appendChild(this.$render("i-label", { caption: msgTime, font: { size: '0.8125rem', color: Theme.text.secondary }, lineHeight: "1.25rem" }));
                 }
-                if (this.OnContentRendered)
-                    this.OnContentRendered();
+                if (this.onContentRendered)
+                    this.onContentRendered();
                 showUserInfo = false;
             }
         }
@@ -729,6 +730,7 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
             this._model = value;
         }
         setData(sender, pubKey, message, isMyThread, showUserInfo) {
+            this.pnlContainer.justifyContent = isMyThread ? 'end' : 'start';
             this.pnlMessage.border = { radius: isMyThread ? "16px 16px 2px 16px" : "16px 16px 16px 2px" };
             this.pnlMessage.background = { color: isMyThread ? "#B14FFF" : Theme.colors.secondary.main };
             if (showUserInfo) {
@@ -762,6 +764,8 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                             parent.appendChild(pnlModule);
                             (0, utils_4.getEmbedElement)(item, pnlModule, async (elm) => {
                                 pnlModule.minHeight = 'auto';
+                                if (this.model.onEmbeddedElement)
+                                    this.model.onEmbeddedElement(item.module, elm);
                                 if (item.module === '@scom/scom-invoice') {
                                     const builderTarget = elm.getConfigurators().find((conf) => conf.target === 'Builders');
                                     const data = builderTarget.getData();
@@ -786,8 +790,8 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                                 else if (item.module === 'checkout-message') {
                                     elm.setData(item.data.properties, message.createdAt);
                                 }
-                                if (this.OnContentRendered)
-                                    this.OnContentRendered();
+                                if (this.onContentRendered)
+                                    this.onContentRendered();
                             });
                             if (item.module !== '@scom/scom-markdown-editor') {
                                 this.pnlThreadMessage.stack = { grow: "1", shrink: "1", basis: "0" };
@@ -796,8 +800,8 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                         else {
                             let content = item?.data?.properties?.content || '';
                             this.appendLabel(this.pnlMessage, content);
-                            if (this.OnContentRendered)
-                                this.OnContentRendered();
+                            if (this.onContentRendered)
+                                this.onContentRendered();
                         }
                     }
                 }
@@ -812,7 +816,7 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
             super.init();
         }
         render() {
-            return (this.$render("i-hstack", { width: "100%", gap: "0.25rem", stack: { grow: "1", shrink: "1", basis: "0" } },
+            return (this.$render("i-hstack", { id: "pnlContainer", width: "100%", gap: "0.25rem", stack: { grow: "1", shrink: "1", basis: "0" } },
                 this.$render("i-hstack", { id: "pnlThreadMessage", position: "relative", maxWidth: "100%", stack: { shrink: "1" } },
                     this.$render("i-vstack", { id: "pnlMessage", class: index_css_2.messageStyle, maxWidth: "100%", padding: { top: "0.75rem", bottom: "0.75rem", left: "0.75rem", right: "0.75rem" }, lineHeight: "1.3125rem", overflow: "hidden", stack: { grow: "1", shrink: "1", basis: "0" }, gap: "0.5rem" }))));
         }
@@ -942,7 +946,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         async addThread(pubKey, info, isPrepend) {
             const thread = new components_10.ScomChatThread();
             thread.model = this.model;
-            thread.OnContentRendered = () => {
+            thread.onContentRendered = () => {
                 if (!isPrepend)
                     this.scrollToBottom();
             };
@@ -1042,6 +1046,10 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                 thread.addMessages(npub, groupedMessage);
             }, 700);
         }
+        handleEmbeddedElement(module, elm) {
+            if (this.onEmbeddedElement)
+                this.onEmbeddedElement(module, elm);
+        }
         init() {
             this.model = new model_1.Model();
             super.init();
@@ -1051,6 +1059,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             const isAIChat = this.getAttribute('isAIChat', true);
             if (isAIChat != null)
                 this.isAIChat = isAIChat;
+            this.model.onEmbeddedElement = this.handleEmbeddedElement.bind(this);
             this.observer = new IntersectionObserver(this.handleIntersect.bind(this));
             this.observer.observe(this.pnlMessageTop);
         }

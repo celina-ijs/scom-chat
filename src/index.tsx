@@ -13,6 +13,7 @@ interface ScomChatElement extends ControlElement {
     isAIChat?: boolean;
     onSendMessage?: (message: string) => void;
     onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
+    onEmbeddedElement?: (module: string,  elm: any) => void;
 }
 
 declare global {
@@ -35,6 +36,7 @@ export class ScomChat extends Module {
     private isFetchingMessage: boolean;
     onSendMessage: (message: string) => void;
     onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
+    onEmbeddedElement: (module: string,  elm: any) => void;
 
     get interlocutor() {
         return this.model.interlocutor;
@@ -141,7 +143,7 @@ export class ScomChat extends Module {
     private async addThread(pubKey: string, info: IGroupedMessage, isPrepend?: boolean) {
         const thread = new ScomChatThread();
         thread.model = this.model;
-        thread.OnContentRendered = () => {
+        thread.onContentRendered = () => {
             if (!isPrepend) this.scrollToBottom();
         }
         await thread.ready();
@@ -241,6 +243,10 @@ export class ScomChat extends Module {
         }, 700);
     }
 
+    private handleEmbeddedElement(module: string,  elm: any) {
+        if (this.onEmbeddedElement) this.onEmbeddedElement(module, elm);
+    }
+
     init() {
         this.model = new Model();
         super.init();
@@ -248,6 +254,7 @@ export class ScomChat extends Module {
         if (isGroup != null) this.isGroup = isGroup;
         const isAIChat = this.getAttribute('isAIChat', true);
         if (isAIChat != null) this.isAIChat = isAIChat;
+        this.model.onEmbeddedElement = this.handleEmbeddedElement.bind(this);
         this.observer = new IntersectionObserver(this.handleIntersect.bind(this));
         this.observer.observe(this.pnlMessageTop);
     }

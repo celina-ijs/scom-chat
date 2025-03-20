@@ -30,7 +30,7 @@ export class ScomChatThread extends Module {
     private pnlThread: VStack;
     private pnlContent: VStack;
     private _model: Model;
-    OnContentRendered:() => void;
+    onContentRendered:() => void;
 
     get model() {
         return this._model;
@@ -57,8 +57,9 @@ export class ScomChatThread extends Module {
         let showUserInfo = isGroup && !isMyThread;
         for (let i = 0; i < messages.length; i++) {
             const showMessageTime = messages[i + 1] ? moment.unix(messages[i + 1].createdAt).diff(moment.unix(messages[i].createdAt)) > 60000 : true;
-            const threadMessage = new ScomChatThreadMessage();
-            threadMessage.OnContentRendered = this.OnContentRendered;
+            const threadMessage = new ScomChatThreadMessage(undefined, { width: '100%' });
+            threadMessage.model = this.model;
+            threadMessage.onContentRendered = this.onContentRendered;
             this.pnlContent.appendChild(threadMessage);
             await threadMessage.ready();
             threadMessage.setData(info.sender, info.pubKey, messages[i], isMyThread, showUserInfo);
@@ -66,7 +67,7 @@ export class ScomChatThread extends Module {
                 const msgTime = getMessageTime(messages[i].createdAt);
                 this.pnlContent.appendChild(<i-label caption={msgTime} font={{ size: '0.8125rem', color: Theme.text.secondary }} lineHeight="1.25rem"></i-label>);
             }
-            if (this.OnContentRendered) this.OnContentRendered();
+            if (this.onContentRendered) this.onContentRendered();
             showUserInfo = false;
         }
     }
@@ -99,10 +100,11 @@ export class ScomChatThread extends Module {
 
 @customElements('i-scom-chat--thread-message')
 export class ScomChatThreadMessage extends Module {
+    private pnlContainer: HStack;
     private pnlThreadMessage: HStack;
     private pnlMessage: VStack;
     private _model: Model;
-    OnContentRendered:() => void;
+    onContentRendered:() => void;
 
     get model() {
         return this._model;
@@ -113,6 +115,7 @@ export class ScomChatThreadMessage extends Module {
     }
 
     setData(sender: string, pubKey: string, message: { contentElements: IPostData[]; createdAt: number; }, isMyThread: boolean, showUserInfo: boolean) {
+        this.pnlContainer.justifyContent = isMyThread ? 'end' : 'start';
         this.pnlMessage.border = { radius: isMyThread ? "16px 16px 2px 16px" : "16px 16px 16px 2px" };
         this.pnlMessage.background = { color: isMyThread ? "#B14FFF" : Theme.colors.secondary.main };
         if (showUserInfo) {
@@ -168,6 +171,7 @@ export class ScomChatThreadMessage extends Module {
                         parent.appendChild(pnlModule);
                         getEmbedElement(item, pnlModule, async (elm: any) => {
                             pnlModule.minHeight = 'auto';
+                            if (this.model.onEmbeddedElement) this.model.onEmbeddedElement(item.module, elm);
                             if (item.module === '@scom/scom-invoice') {
                                 const builderTarget = elm.getConfigurators().find((conf: any) => conf.target === 'Builders');
                                 const data = builderTarget.getData();
@@ -189,7 +193,7 @@ export class ScomChatThreadMessage extends Module {
                             } else if (item.module === 'checkout-message') {
                                 elm.setData(item.data.properties, message.createdAt);
                             }
-                            if (this.OnContentRendered) this.OnContentRendered();
+                            if (this.onContentRendered) this.onContentRendered();
                         });
                         if (item.module !== '@scom/scom-markdown-editor') {
                             this.pnlThreadMessage.stack = { grow: "1", shrink: "1", basis: "0" };
@@ -197,7 +201,7 @@ export class ScomChatThreadMessage extends Module {
                     } else {
                         let content: string = item?.data?.properties?.content || '';
                         this.appendLabel(this.pnlMessage, content);
-                        if (this.OnContentRendered) this.OnContentRendered();
+                        if (this.onContentRendered) this.onContentRendered();
                     }
                 }
             }
@@ -216,7 +220,7 @@ export class ScomChatThreadMessage extends Module {
 
     render() {
         return (
-            <i-hstack width="100%" gap="0.25rem" stack={{ grow: "1", shrink: "1", basis: "0" }}>
+            <i-hstack id="pnlContainer" width="100%" gap="0.25rem" stack={{ grow: "1", shrink: "1", basis: "0" }}>
                 <i-hstack id="pnlThreadMessage" position="relative" maxWidth="100%" stack={{ shrink: "1" }}>
                     <i-vstack
                         id="pnlMessage"

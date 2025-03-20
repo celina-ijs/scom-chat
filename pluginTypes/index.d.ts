@@ -140,6 +140,7 @@ declare module "@scom/scom-chat/model.ts" {
         private _isGroup;
         private _isAIChat;
         private _widgetMap;
+        onEmbeddedElement: (module: string, elm: any) => void;
         get extensions(): string[];
         get imageExtensions(): string[];
         get interlocutor(): IInterlocutorData;
@@ -229,7 +230,7 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         private pnlThread;
         private pnlContent;
         private _model;
-        OnContentRendered: () => void;
+        onContentRendered: () => void;
         get model(): Model;
         set model(value: Model);
         clear(): void;
@@ -239,10 +240,11 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         render(): any;
     }
     export class ScomChatThreadMessage extends Module {
+        private pnlContainer;
         private pnlThreadMessage;
         private pnlMessage;
         private _model;
-        OnContentRendered: () => void;
+        onContentRendered: () => void;
         get model(): Model;
         set model(value: Model);
         setData(sender: string, pubKey: string, message: {
@@ -291,6 +293,7 @@ declare module "@scom/scom-chat" {
         isAIChat?: boolean;
         onSendMessage?: (message: string) => void;
         onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
+        onEmbeddedElement?: (module: string, elm: any) => void;
     }
     global {
         namespace JSX {
@@ -310,6 +313,7 @@ declare module "@scom/scom-chat" {
         private isFetchingMessage;
         onSendMessage: (message: string) => void;
         onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
+        onEmbeddedElement: (module: string, elm: any) => void;
         get interlocutor(): IInterlocutorData;
         set interlocutor(value: IInterlocutorData);
         set messages(value: IDirectMessage[]);
@@ -338,6 +342,7 @@ declare module "@scom/scom-chat" {
         private _constructMessage;
         private handleSendMessage;
         private handleAutoReply;
+        private handleEmbeddedElement;
         init(): void;
         render(): any;
     }

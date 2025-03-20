@@ -8,6 +8,7 @@ export class Model {
     private _isGroup: boolean = false;
     private _isAIChat: boolean = false;
     private _widgetMap: Map<string, any> = new Map(); // eventId: module
+    onEmbeddedElement: (module: string,  elm: any) => void;
 
     get extensions() {
         return this._extensions;
