@@ -287,6 +287,7 @@ declare module "@scom/scom-chat/data.json.ts" {
 /// <amd-module name="@scom/scom-chat" />
 declare module "@scom/scom-chat" {
     import { ControlElement, Module } from '@ijstech/components';
+    import { ScomChatThread } from "@scom/scom-chat/components/index.ts";
     import { IChatInfo, IDirectMessage, IInterlocutorData, INostrMetadata } from "@scom/scom-chat/interface.ts";
     interface ScomChatElement extends ControlElement {
         isGroup?: boolean;
@@ -342,6 +343,11 @@ declare module "@scom/scom-chat" {
         private _constructMessage;
         private handleSendMessage;
         private handleAutoReply;
+        appendTypingMessage(isPrepend?: boolean): Promise<{
+            thread: ScomChatThread;
+            sender: string;
+            npub: any;
+        }>;
         private handleEmbeddedElement;
         init(): void;
         render(): any;
