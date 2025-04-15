@@ -243,6 +243,19 @@ export class ScomChat extends Module {
         }, 700);
     }
 
+    async appendTypingMessage(isPrepend?: boolean) {
+        const userProfile = getUserProfile();
+        const npub = userProfile?.npub;
+        const createdAt = Math.round(Date.now() / 1000);
+        const sender = this.model.interlocutor.id || "npub123";
+        const groupedMessage: IGroupedMessage = {
+            messages: [this._constructMessage("Typing...", createdAt)],
+            sender
+        };
+        const thread = await this.addThread(npub, groupedMessage, isPrepend);
+        return { thread, sender, npub };
+    }
+
     private handleEmbeddedElement(module: string,  elm: any) {
         if (this.onEmbeddedElement) this.onEmbeddedElement(module, elm);
     }

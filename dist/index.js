@@ -1046,6 +1046,18 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                 thread.addMessages(npub, groupedMessage);
             }, 700);
         }
+        async appendTypingMessage(isPrepend) {
+            const userProfile = (0, utils_5.getUserProfile)();
+            const npub = userProfile?.npub;
+            const createdAt = Math.round(Date.now() / 1000);
+            const sender = this.model.interlocutor.id || "npub123";
+            const groupedMessage = {
+                messages: [this._constructMessage("Typing...", createdAt)],
+                sender
+            };
+            const thread = await this.addThread(npub, groupedMessage, isPrepend);
+            return { thread, sender, npub };
+        }
         handleEmbeddedElement(module, elm) {
             if (this.onEmbeddedElement)
                 this.onEmbeddedElement(module, elm);
