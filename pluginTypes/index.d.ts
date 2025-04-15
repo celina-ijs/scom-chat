@@ -5,6 +5,7 @@ declare module "@scom/scom-chat/index.css.ts" {
     export const imageStyle: string;
     export const messageStyle: string;
     export const customLinkStyle: string;
+    export const spinnerStyle: string;
 }
 /// <amd-module name="@scom/scom-chat/components/loadingSpinner.tsx" />
 declare module "@scom/scom-chat/components/loadingSpinner.tsx" {

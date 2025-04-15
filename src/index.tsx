@@ -1,5 +1,5 @@
 import { ControlElement, customElements, Module, Panel, Styles, VStack } from '@ijstech/components';
-import { messagePanelStyle } from './index.css';
+import { messagePanelStyle, spinnerStyle } from './index.css';
 import { LoadingSpinner, ScomChatThread } from './components';
 import { Model } from './model';
 import { IChatInfo, IDirectMessage, IGroupedMessage, IInterlocutorData, INostrMetadata } from './interface';
@@ -248,8 +248,24 @@ export class ScomChat extends Module {
         const npub = userProfile?.npub;
         const createdAt = Math.round(Date.now() / 1000);
         const sender = this.model.interlocutor.id || "npub123";
+        const elements = [
+            {
+                module: '@scom/scom-markdown-editor',
+                data: {
+                    properties: {
+                        content: `<i-hstack class="typing" alignItems="center">
+                                    <i-icon name="circle" width="10px" height="10px" fill="white"></i-icon>
+                                    <i-icon name="circle" width="10px" height="10px" fill="white"></i-icon>
+                                    <i-icon name="circle" width="10px" height="10px" fill="white"></i-icon>
+                                </i-hstack>
+                                `
+                    }
+                }
+
+            }
+        ]
         const groupedMessage: IGroupedMessage = {
-            messages: [this._constructMessage("Typing...", createdAt)],
+            messages: [{ contentElements: elements, createdAt }],
             sender
         };
         const thread = await this.addThread(npub, groupedMessage, isPrepend);
@@ -274,7 +290,7 @@ export class ScomChat extends Module {
 
     render() {
         return (
-            <i-vstack width="100%" height="100%">
+            <i-vstack width="100%" height="100%" class={spinnerStyle}>
                 <i-vstack
                     id="messageContainer"
                     background={{ color: Theme.background.main }}

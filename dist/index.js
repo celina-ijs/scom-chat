@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 define("@scom/scom-chat/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.customLinkStyle = exports.messageStyle = exports.imageStyle = exports.storageModalStyle = exports.messagePanelStyle = void 0;
+    exports.spinnerStyle = exports.customLinkStyle = exports.messageStyle = exports.imageStyle = exports.storageModalStyle = exports.messagePanelStyle = void 0;
     exports.messagePanelStyle = components_1.Styles.style({
         $nest: {
             '> *:first-child': {
@@ -61,6 +61,33 @@ define("@scom/scom-chat/index.css.ts", ["require", "exports", "@ijstech/componen
             },
             'img': {
                 maxWidth: '100%'
+            }
+        }
+    });
+    const anim = components_1.Styles.keyframes({
+        '0%, 80%, 100%': {
+            transform: 'scale(1)',
+            opacity: 0.5
+        },
+        '40%': {
+            transform: 'scale(1.25)',
+            opacity: 1
+        }
+    });
+    exports.spinnerStyle = components_1.Styles.style({
+        $nest: {
+            '.typing i-icon': {
+                animation: `${anim} 1.5s infinite`,
+                margin: '0 2px'
+            },
+            '.typing i-icon:nth-child(1)': {
+                animationDelay: '0s'
+            },
+            '.typing i-icon:nth-child(2)': {
+                animationDelay: '0.2s'
+            },
+            '.typing i-icon:nth-child(3)': {
+                animationDelay: '0.4s'
             }
         }
     });
@@ -1051,8 +1078,23 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             const npub = userProfile?.npub;
             const createdAt = Math.round(Date.now() / 1000);
             const sender = this.model.interlocutor.id || "npub123";
+            const elements = [
+                {
+                    module: '@scom/scom-markdown-editor',
+                    data: {
+                        properties: {
+                            content: `<i-hstack class="typing" alignItems="center">
+                                    <i-icon name="circle" width="10px" height="10px" fill="white"></i-icon>
+                                    <i-icon name="circle" width="10px" height="10px" fill="white"></i-icon>
+                                    <i-icon name="circle" width="10px" height="10px" fill="white"></i-icon>
+                                </i-hstack>
+                                `
+                        }
+                    }
+                }
+            ];
             const groupedMessage = {
-                messages: [this._constructMessage("Typing...", createdAt)],
+                messages: [{ contentElements: elements, createdAt }],
                 sender
             };
             const thread = await this.addThread(npub, groupedMessage, isPrepend);
@@ -1076,7 +1118,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             this.observer.observe(this.pnlMessageTop);
         }
         render() {
-            return (this.$render("i-vstack", { width: "100%", height: "100%" },
+            return (this.$render("i-vstack", { width: "100%", height: "100%", class: index_css_3.spinnerStyle },
                 this.$render("i-vstack", { id: "messageContainer", background: { color: Theme.background.main }, stack: { grow: "1", basis: "0" }, overflow: { x: 'hidden', y: 'auto' } },
                     this.$render("i-panel", { id: "pnlMessageTop" }),
                     this.$render("i-vstack", { id: "pnlMessage", class: index_css_3.messagePanelStyle, margin: { top: "auto" }, padding: { top: "1rem", bottom: "1rem", left: "1rem", right: "1rem" }, stack: { grow: "1", basis: "0" } })),
