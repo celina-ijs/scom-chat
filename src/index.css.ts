@@ -60,3 +60,32 @@ export const customLinkStyle = Styles.style({
     }
   }
 })
+
+const anim = Styles.keyframes({
+  '0%, 80%, 100%': {
+    transform: 'scale(1)',
+    opacity: 0.5
+  },
+  '40%': {
+    transform: 'scale(1.25)',
+    opacity: 1
+  }
+})
+
+export const spinnerStyle = Styles.style({
+  $nest: {
+    '.typing i-icon': {
+      animation: `${anim} 1.5s infinite`,
+      margin: '0 2px'
+    },
+    '.typing i-icon:nth-child(1)': {
+      animationDelay: '0s'
+    },
+    '.typing i-icon:nth-child(2)': {
+      animationDelay: '0.2s'
+    },
+    '.typing i-icon:nth-child(3)': {
+      animationDelay: '0.4s'
+    }
+  }
+}) 
