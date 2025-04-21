@@ -4,6 +4,7 @@ import {
     customElements,
     HStack,
     Input,
+    Label,
     Modal,
     Module,
     Panel,
@@ -14,7 +15,7 @@ import EmojiPicker from '@scom/scom-emoji-picker';
 import { ScomGifPicker } from '@scom/scom-gif-picker';
 import { Model } from '../model';
 import { ScomChatMediaPreview } from './mediaPreview';
-import { storageModalStyle } from '../index.css';
+import { customHoverStyle, storageModalStyle } from '../index.css';
 import { MediaType } from '../interface';
 import { isDevEnv } from '../utils';
 
@@ -24,6 +25,7 @@ type onSubmitCallback = (message: string, mediaUrls?: string[], event?: Event) =
 
 interface ScomChatMessageComposerElement extends ControlElement {
     onSubmit?: onSubmitCallback;
+    onEdit?: () => void;
 }
 
 declare global {
@@ -43,11 +45,20 @@ export class ScomChatMessageComposer extends Module {
     private gifPicker: ScomGifPicker;
     private pnlPreview: Panel;
     private edtMessage: Input;
+    private pnlEdit: Panel;
+    private pnlContextWrap: Panel;
+    private lblContextPlaceholder: Label;
+    private pnlContext: HStack;
     public onSubmit: onSubmitCallback;
+    public onEdit: () => void;
     private mediaUrl: string;
     private gifUrl: string;
     private scomStorage: ScomStorage;
     private _model: Model;
+
+    private addedContext: string[] = [];
+
+    private isPasting: boolean = false;
 
     get model() {
         return this._model;
@@ -55,6 +66,8 @@ export class ScomChatMessageComposer extends Module {
 
     set model(value: Model) {
         this._model = value;
+        this.pnlEdit.visible = this.model.isEditShown;
+        this.pnlContextWrap.visible = this.model.isContextShown;
     }
 
     private proccessFile() {
@@ -143,12 +156,89 @@ export class ScomChatMessageComposer extends Module {
     }
 
     private handleKeyDown(target: Input, event: KeyboardEvent) {
+        if (event.key === "v" && (event.ctrlKey || event.shiftKey || event.metaKey)) {
+            this.isPasting = true;
+            return;
+        }
         if (event.key === "Enter" && (event.ctrlKey || event.shiftKey || event.metaKey)) return;
         if (event.key === "Enter") {
             event.preventDefault();
         }
         if (event.key !== "Enter") return;
         this.handleSubmit(target, event);
+    }
+
+    private handleChanged(target: Input, event: Event) {
+        if (!this.model.isContextShown) return;
+        const value = target.value;
+
+        if (this.isPasting) {
+            this.isPasting = false;
+            const imageRegex = /https?:\/\/\S+\.(jpg|jpeg|png|gif|bmp|svg)/gi;
+            const match = value.match(imageRegex);
+            if (match) {
+                const context = match[0];
+                if (!this.addedContext.includes(context)) {
+                    this.addedContext.push(context);
+                    this.appendContext(context);
+                }
+                const regex = new RegExp(`(?<!{)${context}(?!})`, 'g');
+                target.value = value.replace(regex, `{${context}}`);
+                this.updateContext(true);
+            }
+        }
+    }
+
+    private appendContext(value: string) {
+        this.lblContextPlaceholder.visible = false;
+        const elem = <i-hstack
+            verticalAlignment='center' gap='4px'
+            height={'100%'}
+            border={{ radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }}
+            padding={{ left: '0.5rem', right: '0.5rem' }}
+            cursor='pointer'
+            display='inline-flex'
+            maxWidth={'200px'}
+            tag={value}
+            class={customHoverStyle}
+        >
+            <i-icon
+                name='link' width='0.875rem' height='0.875rem'
+                stack={{shrink: '0'}} opacity={0.5}
+            ></i-icon>
+            <i-icon
+                name='times' width='0.875rem' height='0.875rem'
+                stack={{shrink: '0'}} opacity={0.5}
+                onClick={() => this.handleRemoveContext(elem)}
+                visible={false}
+            ></i-icon>
+            <i-label caption={value} font={{ size: '0.75rem' }} textOverflow='ellipsis'></i-label>
+        </i-hstack>
+        this.pnlContext.appendChild(elem);
+    }
+
+    private handleRemoveContext(el: HStack) {
+        const value = el.tag;
+        if (value) {
+            const regex = new RegExp(`\{${value}\}`, 'g');
+            this.edtMessage.value = this.edtMessage.value.replace(regex, '');
+            this.addedContext = this.addedContext.filter(item => item !== value);
+        }
+        el?.remove();
+        const hasChildren = this.pnlContext.firstElementChild;
+        if (!hasChildren) {
+            this.updateContext(false);
+        }
+    }
+
+    private updateContext(value: boolean) {
+        this.lblContextPlaceholder.visible = !value;
+        this.pnlContext.visible = value;
+        this.pnlContext.margin = {left: value ? '0.25rem' : '0px'};
+        if (!value) {
+            this.addedContext = [];
+            this.pnlContext.clearInnerHTML();
+        }
     }
     
     private async submitMessage(event: Event) {
@@ -163,6 +253,7 @@ export class ScomChatMessageComposer extends Module {
     }
 
     private async handleSubmit(target: Control, event: Event) {
+        this.updateContext(false);
         try {
             this.submitMessage(event);
             this.edtMessage.value = "";
@@ -202,8 +293,13 @@ export class ScomChatMessageComposer extends Module {
         this.gifPicker.closeModal();
     }
 
+    private handleEdit() {
+        if (typeof this.onEdit === 'function') this.onEdit();
+    }
+
     init() {
         super.init();
+        this.onEdit = this.getAttribute('onEdit', true) || this.onEdit;
         this.pnlAttachment.visible = isDevEnv();
     }
 
@@ -223,6 +319,32 @@ export class ScomChatMessageComposer extends Module {
                 ]}
             >
                 <i-panel id="pnlPreview" minHeight="auto" visible={false}></i-panel>
+                <i-hstack
+                    id="pnlContextWrap"
+                    verticalAlignment='center'
+                    display='inline-flex' height={'1.5rem'}
+                    margin={{top: '0.25rem'}}
+                    visible={false}
+                >
+                    <i-hstack
+                        id="pnlContextFixed"
+                        verticalAlignment='center'
+                        padding={{ left: '0.5rem', right: '0.5rem' }}
+                        border={{ radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }}
+                        cursor='pointer'
+                        height={'100%'} gap="4px"
+                        display='inline-flex'
+                    >
+                        <i-label caption='@' font={{ size: '0.875rem' }} opacity={0.5}></i-label>
+                        <i-label id="lblContextPlaceholder" caption='Add Context' font={{ size: '0.75rem' }}></i-label>
+                    </i-hstack>
+                    <i-hstack
+                        id="pnlContext"
+                        margin={{left: '0px'}}
+                        verticalAlignment='center' gap='4px'
+                        height={'100%'} wrap='wrap'
+                    ></i-hstack>
+                </i-hstack>
                 <i-hstack width="100%" verticalAlignment="center" gap="4px">
                     <i-hstack
                         id="pnlAttachment"
@@ -322,6 +444,21 @@ export class ScomChatMessageComposer extends Module {
                         </i-modal>
                     </i-hstack>
                     <i-hstack
+                        id="pnlEdit"
+                        width="2rem"
+                        height="2rem"
+                        border={{ radius: '50%' }}
+                        horizontalAlignment="center"
+                        verticalAlignment="center"
+                        cursor="pointer"
+                        visible={false}
+                        hover={{ backgroundColor: "#C16FFF26" }}
+                        tooltip={{ content: '$emoji', placement: 'top' }}
+                        onClick={this.handleEdit}
+                    >
+                        <i-icon width="1rem" height="1rem" name='edit' fill="#C16FFF" />
+                    </i-hstack>
+                    <i-hstack
                         width="2rem"
                         height="2rem"
                         position="relative"
@@ -368,7 +505,9 @@ export class ScomChatMessageComposer extends Module {
                             placeholder="$type_a_message"
                             inputType="textarea"
                             resize='auto-grow'
+                            background={{ color: 'transparent' }}
                             onKeyDown={this.handleKeyDown}
+                            onChanged={this.handleChanged}
                         ></i-input>
                     </i-hstack>
                     <i-hstack
