@@ -7,6 +7,8 @@ export class Model {
     private _extensions: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'tiff', 'tif', 'mp4', 'webm', 'ogg', 'avi', 'mkv', 'mov', 'm3u8'];
     private _isGroup: boolean = false;
     private _isAIChat: boolean = false;
+    private _isEditShown: boolean = false;
+    private _isContextShown: boolean = false;
     private _widgetMap: Map<string, any> = new Map(); // eventId: module
     onEmbeddedElement: (module: string,  elm: any) => void;
 
@@ -67,6 +69,22 @@ export class Model {
 
     get widgetMap() {
         return this._widgetMap;
+    }
+
+    get isEditShown() {
+        return this._isEditShown;
+    }
+
+    set isEditShown(value: boolean) {
+        this._isEditShown = value;
+    }
+
+    get isContextShown() {
+        return this._isContextShown;
+    }
+
+    set isContextShown(value: boolean) {
+        this._isContextShown = value;
     }
 
     getData() {

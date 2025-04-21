@@ -1,6 +1,6 @@
 import { ControlElement, customElements, Module, Panel, Styles, VStack } from '@ijstech/components';
 import { messagePanelStyle, spinnerStyle } from './index.css';
-import { LoadingSpinner, ScomChatThread } from './components';
+import { LoadingSpinner, ScomChatMessageComposer, ScomChatThread } from './components';
 import { Model } from './model';
 import { IChatInfo, IDirectMessage, IGroupedMessage, IInterlocutorData, INostrMetadata } from './interface';
 import { constructMessage, getUserProfile, groupMessage } from './utils';
@@ -11,6 +11,9 @@ const Theme = Styles.Theme.ThemeVars;
 interface ScomChatElement extends ControlElement {
     isGroup?: boolean;
     isAIChat?: boolean;
+    isEditShown?: boolean;
+    isContextShown?: boolean;
+    onEdit?: () => void;
     onSendMessage?: (message: string) => void;
     onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     onEmbeddedElement?: (module: string,  elm: any) => void;
@@ -30,6 +33,7 @@ export class ScomChat extends Module {
     private pnlMessageTop: Panel;
     private loadingSpinner: LoadingSpinner;
     private pnlMessage: VStack;
+    private messageComposer: ScomChatMessageComposer;
     private model: Model;
     private _oldMessage: IDirectMessage;
     private observer: IntersectionObserver;
@@ -37,6 +41,7 @@ export class ScomChat extends Module {
     onSendMessage: (message: string) => void;
     onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     onEmbeddedElement: (module: string,  elm: any) => void;
+    onEdit: () => void;
 
     get interlocutor() {
         return this.model.interlocutor;
@@ -89,6 +94,22 @@ export class ScomChat extends Module {
 
     set isAIChat(value: boolean) {
         this.model.isAIChat = value;
+    }
+
+    get isEditShown() {
+        return this.model.isEditShown;
+    }
+
+    set isEditShown(value: boolean) {
+        this.model.isEditShown = value;
+    }
+
+    get isContextShown() {
+        return this.model.isContextShown;
+    }
+    
+    set isContextShown(value: boolean) {
+        this.model.isContextShown = value;
     }
 
     constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>) {
@@ -276,6 +297,10 @@ export class ScomChat extends Module {
         if (this.onEmbeddedElement) this.onEmbeddedElement(module, elm);
     }
 
+    private handleEdit() {
+        if (typeof this.onEdit === 'function') this.onEdit();
+    }
+
     init() {
         this.model = new Model();
         super.init();
@@ -283,9 +308,14 @@ export class ScomChat extends Module {
         if (isGroup != null) this.isGroup = isGroup;
         const isAIChat = this.getAttribute('isAIChat', true);
         if (isAIChat != null) this.isAIChat = isAIChat;
+        const isEditShown = this.getAttribute('isEditShown', true);
+        if (isEditShown != null) this.isEditShown = isEditShown;
+        const isContextShown = this.getAttribute('isContextShown', true);
+        if (isContextShown != null) this.isContextShown = isContextShown;
         this.model.onEmbeddedElement = this.handleEmbeddedElement.bind(this);
         this.observer = new IntersectionObserver(this.handleIntersect.bind(this));
         this.observer.observe(this.pnlMessageTop);
+        this.messageComposer.model = this.model;
     }
 
     render() {
@@ -319,9 +349,11 @@ export class ScomChat extends Module {
                         ]}
                     >
                         <i-scom-chat--message-composer
+                            id="messageComposer"
                             width="100%"
                             margin={{ top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }}
                             onSubmit={this.handleSendMessage}
+                            onEdit={this.handleEdit}
                         ></i-scom-chat--message-composer>
                     </i-hstack>
                 </i-vstack>

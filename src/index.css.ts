@@ -89,3 +89,14 @@ export const spinnerStyle = Styles.style({
     }
   }
 }) 
+
+export const customHoverStyle = Styles.style({
+  $nest: {
+    '&:hover > i-icon:first-child': {
+      display: 'none'
+    },
+    '&:hover > i-icon:nth-child(2)': {
+      display: 'block !important'
+    }
+  }
+});

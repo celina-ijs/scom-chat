@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 define("@scom/scom-chat/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.spinnerStyle = exports.customLinkStyle = exports.messageStyle = exports.imageStyle = exports.storageModalStyle = exports.messagePanelStyle = void 0;
+    exports.customHoverStyle = exports.spinnerStyle = exports.customLinkStyle = exports.messageStyle = exports.imageStyle = exports.storageModalStyle = exports.messagePanelStyle = void 0;
     exports.messagePanelStyle = components_1.Styles.style({
         $nest: {
             '> *:first-child': {
@@ -88,6 +88,16 @@ define("@scom/scom-chat/index.css.ts", ["require", "exports", "@ijstech/componen
             },
             '.typing i-icon:nth-child(3)': {
                 animationDelay: '0.4s'
+            }
+        }
+    });
+    exports.customHoverStyle = components_1.Styles.style({
+        $nest: {
+            '&:hover > i-icon:first-child': {
+                display: 'none'
+            },
+            '&:hover > i-icon:nth-child(2)': {
+                display: 'block !important'
             }
         }
     });
@@ -386,6 +396,8 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
             this._extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'tiff', 'tif', 'mp4', 'webm', 'ogg', 'avi', 'mkv', 'mov', 'm3u8'];
             this._isGroup = false;
             this._isAIChat = false;
+            this._isEditShown = false;
+            this._isContextShown = false;
             this._widgetMap = new Map(); // eventId: module
         }
         get extensions() {
@@ -436,6 +448,18 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
         get widgetMap() {
             return this._widgetMap;
         }
+        get isEditShown() {
+            return this._isEditShown;
+        }
+        set isEditShown(value) {
+            this._isEditShown = value;
+        }
+        get isContextShown() {
+            return this._isContextShown;
+        }
+        set isContextShown(value) {
+            this._isContextShown = value;
+        }
         getData() {
             return this._data;
         }
@@ -466,11 +490,18 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
     exports.ScomChatMessageComposer = void 0;
     const Theme = components_6.Styles.Theme.ThemeVars;
     let ScomChatMessageComposer = class ScomChatMessageComposer extends components_6.Module {
+        constructor() {
+            super(...arguments);
+            this.addedContext = [];
+            this.isPasting = false;
+        }
         get model() {
             return this._model;
         }
         set model(value) {
             this._model = value;
+            this.pnlEdit.visible = this.model.isEditShown;
+            this.pnlContextWrap.visible = this.model.isContextShown;
         }
         proccessFile() {
             if (!this.scomStorage) {
@@ -554,6 +585,10 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             this.mdAttachment.visible = false;
         }
         handleKeyDown(target, event) {
+            if (event.key === "v" && (event.ctrlKey || event.shiftKey || event.metaKey)) {
+                this.isPasting = true;
+                return;
+            }
             if (event.key === "Enter" && (event.ctrlKey || event.shiftKey || event.metaKey))
                 return;
             if (event.key === "Enter") {
@@ -562,6 +597,56 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             if (event.key !== "Enter")
                 return;
             this.handleSubmit(target, event);
+        }
+        handleChanged(target, event) {
+            if (!this.model.isContextShown)
+                return;
+            const value = target.value;
+            if (this.isPasting) {
+                this.isPasting = false;
+                const imageRegex = /https?:\/\/\S+\.(jpg|jpeg|png|gif|bmp|svg)/gi;
+                const match = value.match(imageRegex);
+                if (match) {
+                    const context = match[0];
+                    if (!this.addedContext.includes(context)) {
+                        this.addedContext.push(context);
+                        this.appendContext(context);
+                    }
+                    const regex = new RegExp(`(?<!{)${context}(?!})`, 'g');
+                    target.value = value.replace(regex, `{${context}}`);
+                    this.updateContext(true);
+                }
+            }
+        }
+        appendContext(value) {
+            this.lblContextPlaceholder.visible = false;
+            const elem = this.$render("i-hstack", { verticalAlignment: 'center', gap: '4px', height: '100%', border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, padding: { left: '0.5rem', right: '0.5rem' }, cursor: 'pointer', display: 'inline-flex', maxWidth: '200px', tag: value, class: index_css_1.customHoverStyle },
+                this.$render("i-icon", { name: 'link', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5 }),
+                this.$render("i-icon", { name: 'times', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5, onClick: () => this.handleRemoveContext(elem), visible: false }),
+                this.$render("i-label", { caption: value, font: { size: '0.75rem' }, textOverflow: 'ellipsis' }));
+            this.pnlContext.appendChild(elem);
+        }
+        handleRemoveContext(el) {
+            const value = el.tag;
+            if (value) {
+                const regex = new RegExp(`\{${value}\}`, 'g');
+                this.edtMessage.value = this.edtMessage.value.replace(regex, '');
+                this.addedContext = this.addedContext.filter(item => item !== value);
+            }
+            el?.remove();
+            const hasChildren = this.pnlContext.firstElementChild;
+            if (!hasChildren) {
+                this.updateContext(false);
+            }
+        }
+        updateContext(value) {
+            this.lblContextPlaceholder.visible = !value;
+            this.pnlContext.visible = value;
+            this.pnlContext.margin = { left: value ? '0.25rem' : '0px' };
+            if (!value) {
+                this.addedContext = [];
+                this.pnlContext.clearInnerHTML();
+            }
         }
         async submitMessage(event) {
             const gifUrl = this.gifUrl;
@@ -578,6 +663,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             this.removeMedia();
         }
         async handleSubmit(target, event) {
+            this.updateContext(false);
             try {
                 this.submitMessage(event);
                 this.edtMessage.value = "";
@@ -613,8 +699,13 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             this.addMedia(interface_2.MediaType.Image, smallUrl);
             this.gifPicker.closeModal();
         }
+        handleEdit() {
+            if (typeof this.onEdit === 'function')
+                this.onEdit();
+        }
         init() {
             super.init();
+            this.onEdit = this.getAttribute('onEdit', true) || this.onEdit;
             this.pnlAttachment.visible = (0, utils_3.isDevEnv)();
         }
         render() {
@@ -627,6 +718,11 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                     }
                 ] },
                 this.$render("i-panel", { id: "pnlPreview", minHeight: "auto", visible: false }),
+                this.$render("i-hstack", { id: "pnlContextWrap", verticalAlignment: 'center', display: 'inline-flex', height: '1.5rem', margin: { top: '0.25rem' }, visible: false },
+                    this.$render("i-hstack", { id: "pnlContextFixed", verticalAlignment: 'center', padding: { left: '0.5rem', right: '0.5rem' }, border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, cursor: 'pointer', height: '100%', gap: "4px", display: 'inline-flex' },
+                        this.$render("i-label", { caption: '@', font: { size: '0.875rem' }, opacity: 0.5 }),
+                        this.$render("i-label", { id: "lblContextPlaceholder", caption: 'Add Context', font: { size: '0.75rem' } })),
+                    this.$render("i-hstack", { id: "pnlContext", margin: { left: '0px' }, verticalAlignment: 'center', gap: '4px', height: '100%', wrap: 'wrap' })),
                 this.$render("i-hstack", { width: "100%", verticalAlignment: "center", gap: "4px" },
                     this.$render("i-hstack", { id: "pnlAttachment", position: "relative", width: "2rem", height: "2rem", border: { radius: '50%' }, horizontalAlignment: "center", verticalAlignment: "center", cursor: "pointer", hover: { backgroundColor: "#C16FFF26" }, tooltip: { content: '$attachment', placement: 'top' }, onClick: this.handleAttachmentClick },
                         this.$render("i-icon", { width: "1rem", height: "1rem", name: 'paperclip', fill: "#C16FFF" }),
@@ -660,13 +756,15 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                                     this.$render("i-hstack", { width: "2rem", height: "2rem", horizontalAlignment: "center", verticalAlignment: "center", tooltip: { content: '$media', placement: 'top' } },
                                         this.$render("i-icon", { width: "1rem", height: "1rem", name: 'images', fill: "#C16FFF" })),
                                     this.$render("i-label", { caption: "$gif", font: { color: Theme.colors.secondary.light, weight: 400, size: '0.875rem' } }))))),
+                    this.$render("i-hstack", { id: "pnlEdit", width: "2rem", height: "2rem", border: { radius: '50%' }, horizontalAlignment: "center", verticalAlignment: "center", cursor: "pointer", visible: false, hover: { backgroundColor: "#C16FFF26" }, tooltip: { content: '$emoji', placement: 'top' }, onClick: this.handleEdit },
+                        this.$render("i-icon", { width: "1rem", height: "1rem", name: 'edit', fill: "#C16FFF" })),
                     this.$render("i-hstack", { width: "2rem", height: "2rem", position: "relative" },
                         this.$render("i-hstack", { width: "2rem", height: "2rem", border: { radius: '50%' }, horizontalAlignment: "center", verticalAlignment: "center", cursor: "pointer", hover: { backgroundColor: "#C16FFF26" }, tooltip: { content: '$emoji', placement: 'top' }, onClick: this.handleEmojiClick },
                             this.$render("i-icon", { width: "1rem", height: "1rem", name: 'smile', fill: "#C16FFF" })),
                         this.$render("i-modal", { id: "mdEmoji", width: "20rem", popupPlacement: 'topLeft', showBackdrop: false, border: { radius: '1rem' }, boxShadow: 'rgba(101, 119, 134, 0.2) 0px 0px 15px, rgba(101, 119, 134, 0.15) 0px 0px 3px 1px', padding: { top: 0, left: 0, right: 0, bottom: 0 }, margin: { bottom: '0.25rem' }, closeOnScrollChildFixed: true, overflow: { y: 'hidden' }, visible: false },
                             this.$render("i-scom-emoji-picker", { id: "emojiPicker", onEmojiSelected: this.handleSelectedEmoji }))),
                     this.$render("i-hstack", { verticalAlignment: "center", stack: { grow: "1" } },
-                        this.$render("i-input", { id: "edtMessage", width: "100%", height: "auto", maxHeight: 130, display: "flex", rows: 1, padding: { left: '0.25rem', right: '0.25rem' }, border: { style: 'none' }, placeholder: "$type_a_message", inputType: "textarea", resize: 'auto-grow', onKeyDown: this.handleKeyDown })),
+                        this.$render("i-input", { id: "edtMessage", width: "100%", height: "auto", maxHeight: 130, display: "flex", rows: 1, padding: { left: '0.25rem', right: '0.25rem' }, border: { style: 'none' }, placeholder: "$type_a_message", inputType: "textarea", resize: 'auto-grow', background: { color: 'transparent' }, onKeyDown: this.handleKeyDown, onChanged: this.handleChanged })),
                     this.$render("i-hstack", { width: "2rem", height: "2rem", border: { radius: '50%' }, horizontalAlignment: "center", verticalAlignment: "center", cursor: "pointer", hover: { backgroundColor: "#C16FFF26" }, onClick: this.handleSubmit, tooltip: { content: '$send', placement: 'top' } },
                         this.$render("i-icon", { width: "1rem", height: "1rem", name: 'paper-plane', fill: "#C16FFF" })))));
         }
@@ -929,6 +1027,18 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         set isAIChat(value) {
             this.model.isAIChat = value;
         }
+        get isEditShown() {
+            return this.model.isEditShown;
+        }
+        set isEditShown(value) {
+            this.model.isEditShown = value;
+        }
+        get isContextShown() {
+            return this.model.isContextShown;
+        }
+        set isContextShown(value) {
+            this.model.isContextShown = value;
+        }
         constructMessage(content, metadataByPubKeyMap) {
             return (0, utils_5.constructMessage)(content, metadataByPubKeyMap);
         }
@@ -1104,6 +1214,10 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             if (this.onEmbeddedElement)
                 this.onEmbeddedElement(module, elm);
         }
+        handleEdit() {
+            if (typeof this.onEdit === 'function')
+                this.onEdit();
+        }
         init() {
             this.model = new model_1.Model();
             super.init();
@@ -1113,9 +1227,16 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             const isAIChat = this.getAttribute('isAIChat', true);
             if (isAIChat != null)
                 this.isAIChat = isAIChat;
+            const isEditShown = this.getAttribute('isEditShown', true);
+            if (isEditShown != null)
+                this.isEditShown = isEditShown;
+            const isContextShown = this.getAttribute('isContextShown', true);
+            if (isContextShown != null)
+                this.isContextShown = isContextShown;
             this.model.onEmbeddedElement = this.handleEmbeddedElement.bind(this);
             this.observer = new IntersectionObserver(this.handleIntersect.bind(this));
             this.observer.observe(this.pnlMessageTop);
+            this.messageComposer.model = this.model;
         }
         render() {
             return (this.$render("i-vstack", { width: "100%", height: "100%", class: index_css_3.spinnerStyle },
@@ -1131,7 +1252,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                                 }
                             }
                         ] },
-                        this.$render("i-scom-chat--message-composer", { width: "100%", margin: { top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }, onSubmit: this.handleSendMessage })))));
+                        this.$render("i-scom-chat--message-composer", { id: "messageComposer", width: "100%", margin: { top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }, onSubmit: this.handleSendMessage, onEdit: this.handleEdit })))));
         }
     };
     ScomChat = __decorate([

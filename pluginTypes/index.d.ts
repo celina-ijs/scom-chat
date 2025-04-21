@@ -6,6 +6,7 @@ declare module "@scom/scom-chat/index.css.ts" {
     export const messageStyle: string;
     export const customLinkStyle: string;
     export const spinnerStyle: string;
+    export const customHoverStyle: string;
 }
 /// <amd-module name="@scom/scom-chat/components/loadingSpinner.tsx" />
 declare module "@scom/scom-chat/components/loadingSpinner.tsx" {
@@ -140,6 +141,8 @@ declare module "@scom/scom-chat/model.ts" {
         private _extensions;
         private _isGroup;
         private _isAIChat;
+        private _isEditShown;
+        private _isContextShown;
         private _widgetMap;
         onEmbeddedElement: (module: string, elm: any) => void;
         get extensions(): string[];
@@ -156,6 +159,10 @@ declare module "@scom/scom-chat/model.ts" {
         set metadataByPubKeyMap(map: Record<string, INostrMetadata>);
         get dataManager(): any;
         get widgetMap(): Map<string, any>;
+        get isEditShown(): boolean;
+        set isEditShown(value: boolean);
+        get isContextShown(): boolean;
+        set isContextShown(value: boolean);
         getData(): IChatInfo;
         setData(value: IChatInfo): Promise<void>;
         fetchPaymentReceiptInfo(paymentRequest: string): Promise<any>;
@@ -169,6 +176,7 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
     type onSubmitCallback = (message: string, mediaUrls?: string[], event?: Event) => Promise<void>;
     interface ScomChatMessageComposerElement extends ControlElement {
         onSubmit?: onSubmitCallback;
+        onEdit?: () => void;
     }
     global {
         namespace JSX {
@@ -185,11 +193,18 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         private gifPicker;
         private pnlPreview;
         private edtMessage;
+        private pnlEdit;
+        private pnlContextWrap;
+        private lblContextPlaceholder;
+        private pnlContext;
         onSubmit: onSubmitCallback;
+        onEdit: () => void;
         private mediaUrl;
         private gifUrl;
         private scomStorage;
         private _model;
+        private addedContext;
+        private isPasting;
         get model(): Model;
         set model(value: Model);
         private proccessFile;
@@ -197,12 +212,17 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         private handleEmojiClick;
         private handelGifClick;
         private handleKeyDown;
+        private handleChanged;
+        private appendContext;
+        private handleRemoveContext;
+        private updateContext;
         private submitMessage;
         private handleSubmit;
         private addMedia;
         private removeMedia;
         private handleSelectedEmoji;
         private onGifSelected;
+        private handleEdit;
         init(): void;
         render(): any;
     }
@@ -293,6 +313,9 @@ declare module "@scom/scom-chat" {
     interface ScomChatElement extends ControlElement {
         isGroup?: boolean;
         isAIChat?: boolean;
+        isEditShown?: boolean;
+        isContextShown?: boolean;
+        onEdit?: () => void;
         onSendMessage?: (message: string) => void;
         onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
         onEmbeddedElement?: (module: string, elm: any) => void;
@@ -309,6 +332,7 @@ declare module "@scom/scom-chat" {
         private pnlMessageTop;
         private loadingSpinner;
         private pnlMessage;
+        private messageComposer;
         private model;
         private _oldMessage;
         private observer;
@@ -316,6 +340,7 @@ declare module "@scom/scom-chat" {
         onSendMessage: (message: string) => void;
         onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
         onEmbeddedElement: (module: string, elm: any) => void;
+        onEdit: () => void;
         get interlocutor(): IInterlocutorData;
         set interlocutor(value: IInterlocutorData);
         set messages(value: IDirectMessage[]);
@@ -328,6 +353,10 @@ declare module "@scom/scom-chat" {
         set isGroup(value: boolean);
         get isAIChat(): boolean;
         set isAIChat(value: boolean);
+        get isEditShown(): boolean;
+        set isEditShown(value: boolean);
+        get isContextShown(): boolean;
+        set isContextShown(value: boolean);
         constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>): any[];
         clear(): void;
         getData(): IChatInfo;
@@ -350,6 +379,7 @@ declare module "@scom/scom-chat" {
             npub: any;
         }>;
         private handleEmbeddedElement;
+        private handleEdit;
         init(): void;
         render(): any;
     }
