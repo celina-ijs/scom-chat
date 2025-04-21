@@ -1,7 +1,7 @@
 {
     "name": "@scom/scom-chat",
     "type": "widget",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "dependencies": [
         "@ijstech/components",
         "@scom/scom-signer",
