@@ -177,6 +177,7 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
     interface ScomChatMessageComposerElement extends ControlElement {
         onSubmit?: onSubmitCallback;
         onEdit?: () => void;
+        onContextRemoved?: (value: string) => void;
     }
     global {
         namespace JSX {
@@ -199,11 +200,13 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         private pnlContext;
         onSubmit: onSubmitCallback;
         onEdit: () => void;
+        onContextRemoved: (value: string) => void;
         private mediaUrl;
         private gifUrl;
         private scomStorage;
         private _model;
         private addedContext;
+        private contextEls;
         private isPasting;
         get model(): Model;
         set model(value: Model);
@@ -216,6 +219,8 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         private appendContext;
         private handleRemoveContext;
         private updateContext;
+        addContext(value: string): void;
+        removeContext(value: string): void;
         private submitMessage;
         private handleSubmit;
         private addMedia;
@@ -319,6 +324,7 @@ declare module "@scom/scom-chat" {
         onSendMessage?: (message: string) => void;
         onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
         onEmbeddedElement?: (module: string, elm: any) => void;
+        onContextRemoved?: (value: string) => void;
     }
     global {
         namespace JSX {
@@ -341,6 +347,7 @@ declare module "@scom/scom-chat" {
         onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
         onEmbeddedElement: (module: string, elm: any) => void;
         onEdit: () => void;
+        onContextRemoved: (value: string) => void;
         get interlocutor(): IInterlocutorData;
         set interlocutor(value: IInterlocutorData);
         set messages(value: IDirectMessage[]);
@@ -380,6 +387,9 @@ declare module "@scom/scom-chat" {
         }>;
         private handleEmbeddedElement;
         private handleEdit;
+        addContext(value: string): void;
+        removeContext(value: string): void;
+        private handleRemoveContext;
         init(): void;
         render(): any;
     }

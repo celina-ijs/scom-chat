@@ -17,6 +17,7 @@ interface ScomChatElement extends ControlElement {
     onSendMessage?: (message: string) => void;
     onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     onEmbeddedElement?: (module: string,  elm: any) => void;
+    onContextRemoved?: (value: string) => void;
 }
 
 declare global {
@@ -42,6 +43,7 @@ export class ScomChat extends Module {
     onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     onEmbeddedElement: (module: string,  elm: any) => void;
     onEdit: () => void;
+    onContextRemoved: (value: string) => void;
 
     get interlocutor() {
         return this.model.interlocutor;
@@ -301,9 +303,23 @@ export class ScomChat extends Module {
         if (typeof this.onEdit === 'function') this.onEdit();
     }
 
+    addContext(value: string) {
+        this.messageComposer.addContext(value);
+    }
+
+    removeContext(value: string) {
+        this.messageComposer.removeContext(value);
+    }
+
+    private handleRemoveContext(value: string) {
+        console.log('remove context', value);
+        if (typeof this.onContextRemoved === 'function') this.onContextRemoved(value);
+    }
+
     init() {
         this.model = new Model();
         super.init();
+        this.onContextRemoved = this.getAttribute('onContextRemoved', true) || this.onContextRemoved;
         const isGroup = this.getAttribute('isGroup', true);
         if (isGroup != null) this.isGroup = isGroup;
         const isAIChat = this.getAttribute('isAIChat', true);
@@ -354,6 +370,7 @@ export class ScomChat extends Module {
                             margin={{ top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }}
                             onSubmit={this.handleSendMessage}
                             onEdit={this.handleEdit}
+                            onContextRemoved={this.handleRemoveContext}
                         ></i-scom-chat--message-composer>
                     </i-hstack>
                 </i-vstack>

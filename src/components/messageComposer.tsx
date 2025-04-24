@@ -26,6 +26,7 @@ type onSubmitCallback = (message: string, mediaUrls?: string[], event?: Event) =
 interface ScomChatMessageComposerElement extends ControlElement {
     onSubmit?: onSubmitCallback;
     onEdit?: () => void;
+    onContextRemoved?: (value: string) => void;
 }
 
 declare global {
@@ -51,12 +52,14 @@ export class ScomChatMessageComposer extends Module {
     private pnlContext: HStack;
     public onSubmit: onSubmitCallback;
     public onEdit: () => void;
+    public onContextRemoved: (value: string) => void;
     private mediaUrl: string;
     private gifUrl: string;
     private scomStorage: ScomStorage;
     private _model: Model;
 
     private addedContext: string[] = [];
+    private contextEls: Record<string, HStack> = {};
 
     private isPasting: boolean = false;
 
@@ -170,26 +173,34 @@ export class ScomChatMessageComposer extends Module {
 
     private handleChanged(target: Input, event: Event) {
         if (!this.model.isContextShown) return;
-        const value = target.value;
+        const value: string = target.value || '';
 
         if (this.isPasting) {
             this.isPasting = false;
-            const imageRegex = /https?:\/\/\S+\.(jpg|jpeg|png|gif|bmp|svg)/gi;
+            const imageRegex = /https?:\/\/[^\s{}]+/gi;
             const match = value.match(imageRegex);
             if (match) {
                 const context = match[0];
                 if (!this.addedContext.includes(context)) {
                     this.addedContext.push(context);
-                    this.appendContext(context);
+                    this.appendContext(context, true);
                 }
-                const regex = new RegExp(`(?<!{)${context}(?!})`, 'g');
-                target.value = value.replace(regex, `{${context}}`);
+                const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
+                target.value = value.replace(urlRegex, (match) => `{${match}}`);
                 this.updateContext(true);
             }
+        } else {
+            for (const context of this.addedContext) {
+                if (context.startsWith('http') && !value.includes(context)) {
+                    this.handleRemoveContext(context);
+                    this.addedContext = this.addedContext.filter(item => item !== context);
+                }
+            }
+            target.value = target.value.replace(/\{\}/g, '');
         }
     }
 
-    private appendContext(value: string) {
+    private appendContext(value: string, isLink: boolean) {
         this.lblContextPlaceholder.visible = false;
         const elem = <i-hstack
             verticalAlignment='center' gap='4px'
@@ -200,35 +211,40 @@ export class ScomChatMessageComposer extends Module {
             display='inline-flex'
             maxWidth={'200px'}
             tag={value}
-            class={customHoverStyle}
+            class={!isLink ? customHoverStyle : ''}
         >
             <i-icon
-                name='link' width='0.875rem' height='0.875rem'
+                name={isLink ? 'link' : 'file'} width='0.875rem' height='0.875rem'
                 stack={{shrink: '0'}} opacity={0.5}
             ></i-icon>
             <i-icon
                 name='times' width='0.875rem' height='0.875rem'
                 stack={{shrink: '0'}} opacity={0.5}
-                onClick={() => this.handleRemoveContext(elem)}
+                onClick={() => {
+                    this.handleRemoveContext(value, true)
+                    if (typeof this.onContextRemoved === 'function') this.onContextRemoved(value);
+                }}
                 visible={false}
             ></i-icon>
             <i-label caption={value} font={{ size: '0.75rem' }} textOverflow='ellipsis'></i-label>
         </i-hstack>
         this.pnlContext.appendChild(elem);
+        this.contextEls[value] = elem;
     }
 
-    private handleRemoveContext(el: HStack) {
-        const value = el.tag;
-        if (value) {
+    private handleRemoveContext(value: string, isForced?: boolean) {
+        if (value && isForced) {
             const regex = new RegExp(`\{${value}\}`, 'g');
             this.edtMessage.value = this.edtMessage.value.replace(regex, '');
             this.addedContext = this.addedContext.filter(item => item !== value);
         }
+        const el = this.contextEls[value];
         el?.remove();
         const hasChildren = this.pnlContext.firstElementChild;
         if (!hasChildren) {
             this.updateContext(false);
         }
+        this.contextEls[value] = null;
     }
 
     private updateContext(value: boolean) {
@@ -236,11 +252,27 @@ export class ScomChatMessageComposer extends Module {
         this.pnlContext.visible = value;
         this.pnlContext.margin = {left: value ? '0.25rem' : '0px'};
         if (!value) {
+            for (const key in this.contextEls) {
+                this.contextEls[key]?.remove();
+            }
             this.addedContext = [];
             this.pnlContext.clearInnerHTML();
+            this.contextEls = {};
         }
     }
-    
+
+    public addContext(value: string) {
+        if (!this.addedContext.includes(value)) {
+            this.addedContext.push(value);
+            this.appendContext(value, false);
+            this.updateContext(true);
+        }
+    }
+
+    public removeContext(value: string) {
+        this.handleRemoveContext(value, true);
+    }
+
     private async submitMessage(event: Event) {
         const gifUrl = this.gifUrl;
         const message = this.edtMessage.value.trim();
@@ -250,10 +282,10 @@ export class ScomChatMessageComposer extends Module {
         if (!message.length && !mediaUrls.length) return;
         if (this.onSubmit) await this.onSubmit(message, mediaUrls, event);
         this.removeMedia();
+        this.updateContext(false);
     }
 
     private async handleSubmit(target: Control, event: Event) {
-        this.updateContext(false);
         try {
             this.submitMessage(event);
             this.edtMessage.value = "";
@@ -300,6 +332,8 @@ export class ScomChatMessageComposer extends Module {
     init() {
         super.init();
         this.onEdit = this.getAttribute('onEdit', true) || this.onEdit;
+        this.onContextRemoved = this.getAttribute('onContextRemoved', true) || this.onContextRemoved;
+        this.onSubmit = this.getAttribute('onSubmit', true) || this.onSubmit;
         this.pnlAttachment.visible = isDevEnv();
     }
 
