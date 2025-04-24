@@ -493,6 +493,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         constructor() {
             super(...arguments);
             this.addedContext = [];
+            this.contextEls = {};
             this.isPasting = false;
         }
         get model() {
@@ -601,52 +602,81 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         handleChanged(target, event) {
             if (!this.model.isContextShown)
                 return;
-            const value = target.value;
+            const value = target.value || '';
             if (this.isPasting) {
                 this.isPasting = false;
-                const imageRegex = /https?:\/\/\S+\.(jpg|jpeg|png|gif|bmp|svg)/gi;
+                const imageRegex = /https?:\/\/[^\s{}]+/gi;
                 const match = value.match(imageRegex);
                 if (match) {
                     const context = match[0];
                     if (!this.addedContext.includes(context)) {
                         this.addedContext.push(context);
-                        this.appendContext(context);
+                        this.appendContext(context, true);
                     }
-                    const regex = new RegExp(`(?<!{)${context}(?!})`, 'g');
-                    target.value = value.replace(regex, `{${context}}`);
+                    const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
+                    target.value = value.replace(urlRegex, (match) => `{${match}}`);
                     this.updateContext(true);
                 }
             }
+            else {
+                for (const context of this.addedContext) {
+                    if (context.startsWith('http') && !value.includes(context)) {
+                        this.handleRemoveContext(context);
+                        this.addedContext = this.addedContext.filter(item => item !== context);
+                    }
+                }
+                target.value = target.value.replace(/\{\}/g, '');
+            }
         }
-        appendContext(value) {
+        appendContext(value, isLink) {
             this.lblContextPlaceholder.visible = false;
-            const elem = this.$render("i-hstack", { verticalAlignment: 'center', gap: '4px', height: '100%', border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, padding: { left: '0.5rem', right: '0.5rem' }, cursor: 'pointer', display: 'inline-flex', maxWidth: '200px', tag: value, class: index_css_1.customHoverStyle },
-                this.$render("i-icon", { name: 'link', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5 }),
-                this.$render("i-icon", { name: 'times', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5, onClick: () => this.handleRemoveContext(elem), visible: false }),
+            const elem = this.$render("i-hstack", { verticalAlignment: 'center', gap: '4px', height: '100%', border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, padding: { left: '0.5rem', right: '0.5rem' }, cursor: 'pointer', display: 'inline-flex', maxWidth: '200px', tag: value, class: !isLink ? index_css_1.customHoverStyle : '' },
+                this.$render("i-icon", { name: isLink ? 'link' : 'file', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5 }),
+                this.$render("i-icon", { name: 'times', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5, onClick: () => {
+                        this.handleRemoveContext(value, true);
+                        if (typeof this.onContextRemoved === 'function')
+                            this.onContextRemoved(value);
+                    }, visible: false }),
                 this.$render("i-label", { caption: value, font: { size: '0.75rem' }, textOverflow: 'ellipsis' }));
             this.pnlContext.appendChild(elem);
+            this.contextEls[value] = elem;
         }
-        handleRemoveContext(el) {
-            const value = el.tag;
-            if (value) {
+        handleRemoveContext(value, isForced) {
+            if (value && isForced) {
                 const regex = new RegExp(`\{${value}\}`, 'g');
                 this.edtMessage.value = this.edtMessage.value.replace(regex, '');
                 this.addedContext = this.addedContext.filter(item => item !== value);
             }
+            const el = this.contextEls[value];
             el?.remove();
             const hasChildren = this.pnlContext.firstElementChild;
             if (!hasChildren) {
                 this.updateContext(false);
             }
+            this.contextEls[value] = null;
         }
         updateContext(value) {
             this.lblContextPlaceholder.visible = !value;
             this.pnlContext.visible = value;
             this.pnlContext.margin = { left: value ? '0.25rem' : '0px' };
             if (!value) {
+                for (const key in this.contextEls) {
+                    this.contextEls[key]?.remove();
+                }
                 this.addedContext = [];
                 this.pnlContext.clearInnerHTML();
+                this.contextEls = {};
             }
+        }
+        addContext(value) {
+            if (!this.addedContext.includes(value)) {
+                this.addedContext.push(value);
+                this.appendContext(value, false);
+                this.updateContext(true);
+            }
+        }
+        removeContext(value) {
+            this.handleRemoveContext(value, true);
         }
         async submitMessage(event) {
             const gifUrl = this.gifUrl;
@@ -661,9 +691,9 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             if (this.onSubmit)
                 await this.onSubmit(message, mediaUrls, event);
             this.removeMedia();
+            this.updateContext(false);
         }
         async handleSubmit(target, event) {
-            this.updateContext(false);
             try {
                 this.submitMessage(event);
                 this.edtMessage.value = "";
@@ -706,6 +736,8 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         init() {
             super.init();
             this.onEdit = this.getAttribute('onEdit', true) || this.onEdit;
+            this.onContextRemoved = this.getAttribute('onContextRemoved', true) || this.onContextRemoved;
+            this.onSubmit = this.getAttribute('onSubmit', true) || this.onSubmit;
             this.pnlAttachment.visible = (0, utils_3.isDevEnv)();
         }
         render() {
@@ -1218,9 +1250,21 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             if (typeof this.onEdit === 'function')
                 this.onEdit();
         }
+        addContext(value) {
+            this.messageComposer.addContext(value);
+        }
+        removeContext(value) {
+            this.messageComposer.removeContext(value);
+        }
+        handleRemoveContext(value) {
+            console.log('remove context', value);
+            if (typeof this.onContextRemoved === 'function')
+                this.onContextRemoved(value);
+        }
         init() {
             this.model = new model_1.Model();
             super.init();
+            this.onContextRemoved = this.getAttribute('onContextRemoved', true) || this.onContextRemoved;
             const isGroup = this.getAttribute('isGroup', true);
             if (isGroup != null)
                 this.isGroup = isGroup;
@@ -1252,7 +1296,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                                 }
                             }
                         ] },
-                        this.$render("i-scom-chat--message-composer", { id: "messageComposer", width: "100%", margin: { top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }, onSubmit: this.handleSendMessage, onEdit: this.handleEdit })))));
+                        this.$render("i-scom-chat--message-composer", { id: "messageComposer", width: "100%", margin: { top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }, onSubmit: this.handleSendMessage, onEdit: this.handleEdit, onContextRemoved: this.handleRemoveContext })))));
         }
     };
     ScomChat = __decorate([
