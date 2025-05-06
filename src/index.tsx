@@ -3,7 +3,7 @@ import { messagePanelStyle, spinnerStyle } from './index.css';
 import { LoadingSpinner, ScomChatMessageComposer, ScomChatThread } from './components';
 import { Model } from './model';
 import { IChatInfo, IDirectMessage, IGroupedMessage, IInterlocutorData, INostrMetadata } from './interface';
-import { constructMessage, getUserProfile, groupMessage } from './utils';
+import { constructMessage, createContexts, getUserProfile, groupMessage } from './utils';
 import replyData from './data.json';
 
 const Theme = Styles.Theme.ThemeVars;
@@ -222,15 +222,18 @@ export class ScomChat extends Module {
         this.isFetchingMessage = false;
     }
 
-    private _constructMessage(msg: string, createdAt: number) {
+    private _constructMessage(msg: string, createdAt: number, contexts?: string[]) {
         const messageElementData = this.constructMessage(msg, this.model.metadataByPubKeyMap);
+        if (contexts?.length) {
+            messageElementData.unshift(createContexts(contexts));
+        }
         return {
             contentElements: [...messageElementData],
             createdAt: createdAt
         };
     }
 
-    private async handleSendMessage(message: string, mediaUrls?: string[], event?: Event) {
+    private async handleSendMessage(message: string, mediaUrls?: string[], contexts?: string[], event?: Event) {
         const userProfile = getUserProfile();
         const npub = userProfile?.npub;
         const createdAt = Math.round(Date.now() / 1000);
@@ -241,7 +244,7 @@ export class ScomChat extends Module {
         const messages = mediaUrls ? [...mediaUrls] : [];
         if (message) messages.push(message);
         for (let msg of messages) {
-            newMessage.messages.push(this._constructMessage(msg, createdAt));
+            newMessage.messages.push(this._constructMessage(msg, createdAt, contexts));
             if (this.onSendMessage) this.onSendMessage(msg);
         }
         this.addThread(npub, newMessage);
@@ -312,7 +315,6 @@ export class ScomChat extends Module {
     }
 
     private handleRemoveContext(value: string) {
-        console.log('remove context', value);
         if (typeof this.onContextRemoved === 'function') this.onContextRemoved(value);
     }
 

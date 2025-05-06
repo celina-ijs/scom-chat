@@ -1,6 +1,7 @@
-import { application, Control, Label, moment, Styles } from "@ijstech/components";
+import { application, Button, Control, Label, moment, Styles } from "@ijstech/components";
 import { INostrEvent, INostrMetadata } from "@scom/scom-social-sdk";
 import { IDirectMessage, IGroupedMessage, IPostData } from "./interface";
+import { customButtonStyle } from "./index.css";
 
 const Theme = Styles.Theme.ThemeVars;
 
@@ -179,4 +180,46 @@ function extractMediaFromContent(content: string, metadataByPubKeyMap: Record<st
 export function constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>) {
     const messageElementData = extractMediaFromContent(content, metadataByPubKeyMap);
     return messageElementData;
+}
+
+export function createContexts(contexts: string[]) {
+    return {
+        module: '@scom/page-button',
+        data: {
+            properties: {
+                linkButtons: contexts.map(context => {
+                    const isLink = context.startsWith('http');
+                    return {
+                        caption: context,
+                        maxWidth: '150px',
+                        background: { color: 'transparent' },
+                        border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' },
+                        padding: { left: '0.5rem', right: '0.5rem' },
+                        font: { size: '0.75rem' },
+                        icon: { name: isLink ? 'link' : 'file', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' } },
+                        class: customButtonStyle,
+                        onClick: async (target: Button) => {
+                            if (context.length <= 18) return;
+
+                            const oldName = target.icon.name;
+                            await application.copyToClipboard(context);
+                            target.icon.name = "check";
+                            target.icon.fill = Theme.colors.success.main;
+                            setTimeout(() => {
+                                target.icon.name = oldName;
+                                target.icon.fill = Theme.text.primary;
+                            }, 1600)
+                        }
+                    }
+                })
+            },
+            tag: {
+                width: '100%',
+                pt: 0,
+                pb: 0,
+                pl: 0,
+                pr: 0,
+            },
+        },
+    };
 }

@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 define("@scom/scom-chat/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.customHoverStyle = exports.spinnerStyle = exports.customLinkStyle = exports.messageStyle = exports.imageStyle = exports.storageModalStyle = exports.messagePanelStyle = void 0;
+    exports.customButtonStyle = exports.customHoverStyle = exports.spinnerStyle = exports.customLinkStyle = exports.messageStyle = exports.imageStyle = exports.storageModalStyle = exports.messagePanelStyle = void 0;
     exports.messagePanelStyle = components_1.Styles.style({
         $nest: {
             '> *:first-child': {
@@ -101,6 +101,17 @@ define("@scom/scom-chat/index.css.ts", ["require", "exports", "@ijstech/componen
             }
         }
     });
+    exports.customButtonStyle = components_1.Styles.style({
+        $nest: {
+            '> span': {
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100%',
+                display: 'block'
+            }
+        }
+    });
 });
 define("@scom/scom-chat/components/loadingSpinner.tsx", ["require", "exports", "@ijstech/components"], function (require, exports, components_2) {
     "use strict";
@@ -147,10 +158,10 @@ define("@scom/scom-chat/interface.ts", ["require", "exports"], function (require
         MediaType["Video"] = "video";
     })(MediaType = exports.MediaType || (exports.MediaType = {}));
 });
-define("@scom/scom-chat/utils.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_3) {
+define("@scom/scom-chat/utils.ts", ["require", "exports", "@ijstech/components", "@scom/scom-chat/index.css.ts"], function (require, exports, components_3, index_css_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.constructMessage = exports.groupMessage = exports.createLabelElements = exports.getEmbedElement = exports.getMessageTime = exports.getPublicIndexingRelay = exports.getUserProfile = exports.isDevEnv = void 0;
+    exports.createContexts = exports.constructMessage = exports.groupMessage = exports.createLabelElements = exports.getEmbedElement = exports.getMessageTime = exports.getPublicIndexingRelay = exports.getUserProfile = exports.isDevEnv = void 0;
     const Theme = components_3.Styles.Theme.ThemeVars;
     function isDevEnv() {
         return components_3.application.store.env === 'dev';
@@ -326,6 +337,48 @@ define("@scom/scom-chat/utils.ts", ["require", "exports", "@ijstech/components"]
         return messageElementData;
     }
     exports.constructMessage = constructMessage;
+    function createContexts(contexts) {
+        return {
+            module: '@scom/page-button',
+            data: {
+                properties: {
+                    linkButtons: contexts.map(context => {
+                        const isLink = context.startsWith('http');
+                        return {
+                            caption: context,
+                            maxWidth: '150px',
+                            background: { color: 'transparent' },
+                            border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' },
+                            padding: { left: '0.5rem', right: '0.5rem' },
+                            font: { size: '0.75rem' },
+                            icon: { name: isLink ? 'link' : 'file', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' } },
+                            class: index_css_1.customButtonStyle,
+                            onClick: async (target) => {
+                                if (context.length <= 18)
+                                    return;
+                                const oldName = target.icon.name;
+                                await components_3.application.copyToClipboard(context);
+                                target.icon.name = "check";
+                                target.icon.fill = Theme.colors.success.main;
+                                setTimeout(() => {
+                                    target.icon.name = oldName;
+                                    target.icon.fill = Theme.text.primary;
+                                }, 1600);
+                            }
+                        };
+                    })
+                },
+                tag: {
+                    width: '100%',
+                    pt: 0,
+                    pb: 0,
+                    pl: 0,
+                    pr: 0,
+                },
+            },
+        };
+    }
+    exports.createContexts = createContexts;
 });
 define("@scom/scom-chat/components/mediaPreview.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-chat/interface.ts", "@scom/scom-chat/utils.ts"], function (require, exports, components_4, interface_1, utils_1) {
     "use strict";
@@ -484,7 +537,7 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
     }
     exports.Model = Model;
 });
-define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-storage", "@scom/scom-gif-picker", "@scom/scom-chat/components/mediaPreview.tsx", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/interface.ts", "@scom/scom-chat/utils.ts"], function (require, exports, components_6, scom_storage_1, scom_gif_picker_1, mediaPreview_1, index_css_1, interface_2, utils_3) {
+define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-storage", "@scom/scom-gif-picker", "@scom/scom-chat/components/mediaPreview.tsx", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/interface.ts", "@scom/scom-chat/utils.ts"], function (require, exports, components_6, scom_storage_1, scom_gif_picker_1, mediaPreview_1, index_css_2, interface_2, utils_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomChatMessageComposer = void 0;
@@ -492,7 +545,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
     let ScomChatMessageComposer = class ScomChatMessageComposer extends components_6.Module {
         constructor() {
             super(...arguments);
-            this.addedContext = [];
+            this.addedContexts = [];
             this.contextEls = {};
             this.isPasting = false;
         }
@@ -539,7 +592,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                 overflow: 'hidden',
                 zIndex: 1002,
                 closeIcon: { width: '1rem', height: '1rem', name: 'times', fill: Theme.text.primary, margin: { bottom: '0.5rem' } },
-                class: index_css_1.storageModalStyle
+                class: index_css_2.storageModalStyle
             });
             this.scomStorage.onShow();
         }
@@ -608,8 +661,8 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                 const imageRegex = /https?:\/\/[^\s{}]+/gi;
                 const matches = value.match(imageRegex);
                 for (const context of matches) {
-                    if (!this.addedContext.includes(context)) {
-                        this.addedContext.push(context);
+                    if (!this.addedContexts.includes(context)) {
+                        this.addedContexts.push(context);
                         this.appendContext(context, true);
                     }
                     const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
@@ -618,10 +671,10 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                 this.updateContext(true);
             }
             else {
-                for (const context of this.addedContext) {
+                for (const context of this.addedContexts) {
                     if (context.startsWith('http') && !value.includes(context)) {
                         this.handleRemoveContext(context);
-                        this.addedContext = this.addedContext.filter(item => item !== context);
+                        this.addedContexts = this.addedContexts.filter(item => item !== context);
                     }
                 }
                 target.value = target.value.replace(/\{\}/g, '');
@@ -629,7 +682,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         }
         appendContext(value, isLink) {
             this.lblContextPlaceholder.visible = false;
-            const elem = this.$render("i-hstack", { verticalAlignment: 'center', gap: '4px', height: '100%', border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, padding: { left: '0.5rem', right: '0.5rem' }, cursor: 'pointer', display: 'inline-flex', maxWidth: '200px', tag: value, class: !isLink ? index_css_1.customHoverStyle : '' },
+            const elem = this.$render("i-hstack", { verticalAlignment: 'center', gap: '4px', height: '100%', border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, padding: { left: '0.5rem', right: '0.5rem' }, cursor: 'pointer', display: 'inline-flex', maxWidth: '200px', tag: value, class: !isLink ? index_css_2.customHoverStyle : '' },
                 this.$render("i-icon", { name: isLink ? 'link' : 'file', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5 }),
                 this.$render("i-icon", { name: 'times', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5, onClick: () => {
                         this.handleRemoveContext(value, true);
@@ -644,7 +697,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             if (value && isForced) {
                 const regex = new RegExp(`\{${value}\}`, 'g');
                 this.edtMessage.value = this.edtMessage.value.replace(regex, '');
-                this.addedContext = this.addedContext.filter(item => item !== value);
+                this.addedContexts = this.addedContexts.filter(item => item !== value);
             }
             const el = this.contextEls[value];
             el?.remove();
@@ -662,15 +715,14 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                 for (const key in this.contextEls) {
                     this.contextEls[key]?.remove();
                 }
-                this.addedContext = [];
+                this.addedContexts = [];
                 this.pnlContext.clearInnerHTML();
                 this.contextEls = {};
             }
         }
         addContext(value) {
-            console.log('addContext', value);
-            if (!this.addedContext.includes(value)) {
-                this.addedContext.push(value);
+            if (!this.addedContexts.includes(value)) {
+                this.addedContexts.push(value);
                 this.appendContext(value, false);
                 this.updateContext(true);
             }
@@ -689,7 +741,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             if (!message.length && !mediaUrls.length)
                 return;
             if (this.onSubmit)
-                await this.onSubmit(message, mediaUrls, event);
+                await this.onSubmit(message, mediaUrls, this.addedContexts, event);
             this.removeMedia();
             this.updateContext(false);
         }
@@ -818,7 +870,7 @@ define("@scom/scom-chat/assets.ts", ["require", "exports", "@ijstech/components"
         fullPath
     };
 });
-define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-chat/utils.ts", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/assets.ts"], function (require, exports, components_8, utils_4, index_css_2, assets_1) {
+define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-chat/utils.ts", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/assets.ts"], function (require, exports, components_8, utils_4, index_css_3, assets_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomChatThreadMessage = exports.ScomChatThread = void 0;
@@ -901,12 +953,12 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
             const url = picture || assets_1.default.fullPath('img/default_avatar.png');
             return (this.$render("i-panel", { width: "1.75rem", height: "1.75rem", position: "absolute", top: 0, left: "-2.25rem", overflow: "hidden" },
                 this.$render("i-panel", { width: "100%", height: 0, overflow: "hidden", padding: { bottom: "100%" }, border: { radius: "50%" } },
-                    this.$render("i-image", { class: index_css_2.imageStyle, position: "absolute", display: "block", width: "100%", height: "100%", top: "100%", left: 0, url: url, fallbackUrl: assets_1.default.fullPath('img/default_avatar.png'), cursor: "pointer", objectFit: "cover", onClick: () => this.viewUserProfile(sender) }))));
+                    this.$render("i-image", { class: index_css_3.imageStyle, position: "absolute", display: "block", width: "100%", height: "100%", top: "100%", left: 0, url: url, fallbackUrl: assets_1.default.fullPath('img/default_avatar.png'), cursor: "pointer", objectFit: "cover", onClick: () => this.viewUserProfile(sender) }))));
         }
         appendLabel(parent, text) {
             const splitted = text.split('\n');
             for (let i = 0; i < splitted.length; i++) {
-                const elements = (0, utils_4.createLabelElements)(splitted[i], { overflowWrap: "anywhere", class: index_css_2.customLinkStyle });
+                const elements = (0, utils_4.createLabelElements)(splitted[i], { overflowWrap: "anywhere", class: index_css_3.customLinkStyle });
                 const panel = new components_8.Panel(undefined, { display: 'inline', minHeight: '1.5rem' });
                 panel.append(...elements);
                 parent.appendChild(panel);
@@ -975,7 +1027,7 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
         render() {
             return (this.$render("i-hstack", { id: "pnlContainer", width: "100%", gap: "0.25rem", stack: { grow: "1", shrink: "1", basis: "0" } },
                 this.$render("i-hstack", { id: "pnlThreadMessage", position: "relative", maxWidth: "100%", stack: { shrink: "1" } },
-                    this.$render("i-vstack", { id: "pnlMessage", class: index_css_2.messageStyle, maxWidth: "100%", padding: { top: "0.75rem", bottom: "0.75rem", left: "0.75rem", right: "0.75rem" }, lineHeight: "1.3125rem", overflow: "hidden", stack: { grow: "1", shrink: "1", basis: "0" }, gap: "0.5rem" }))));
+                    this.$render("i-vstack", { id: "pnlMessage", class: index_css_3.messageStyle, maxWidth: "100%", padding: { top: "0.75rem", bottom: "0.75rem", left: "0.75rem", right: "0.75rem" }, lineHeight: "1.3125rem", overflow: "hidden", stack: { grow: "1", shrink: "1", basis: "0" }, gap: "0.5rem" }))));
         }
     };
     ScomChatThreadMessage = __decorate([
@@ -1011,7 +1063,7 @@ define("@scom/scom-chat/data.json.ts", ["require", "exports"], function (require
         "what gets wetter the more it dries?": `A towel! ${String.fromCodePoint(0x1F9FA)}${String.fromCodePoint(0x1F4A6)}`,
     };
 });
-define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/components/index.ts", "@scom/scom-chat/model.ts", "@scom/scom-chat/utils.ts", "@scom/scom-chat/data.json.ts"], function (require, exports, components_9, index_css_3, components_10, model_1, utils_5, data_json_1) {
+define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/components/index.ts", "@scom/scom-chat/model.ts", "@scom/scom-chat/utils.ts", "@scom/scom-chat/data.json.ts"], function (require, exports, components_9, index_css_4, components_10, model_1, utils_5, data_json_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomChat = void 0;
@@ -1171,14 +1223,17 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             this.loadingSpinner.display = 'none';
             this.isFetchingMessage = false;
         }
-        _constructMessage(msg, createdAt) {
+        _constructMessage(msg, createdAt, contexts) {
             const messageElementData = this.constructMessage(msg, this.model.metadataByPubKeyMap);
+            if (contexts?.length) {
+                messageElementData.unshift((0, utils_5.createContexts)(contexts));
+            }
             return {
                 contentElements: [...messageElementData],
                 createdAt: createdAt
             };
         }
-        async handleSendMessage(message, mediaUrls, event) {
+        async handleSendMessage(message, mediaUrls, contexts, event) {
             const userProfile = (0, utils_5.getUserProfile)();
             const npub = userProfile?.npub;
             const createdAt = Math.round(Date.now() / 1000);
@@ -1190,7 +1245,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             if (message)
                 messages.push(message);
             for (let msg of messages) {
-                newMessage.messages.push(this._constructMessage(msg, createdAt));
+                newMessage.messages.push(this._constructMessage(msg, createdAt, contexts));
                 if (this.onSendMessage)
                     this.onSendMessage(msg);
             }
@@ -1257,7 +1312,6 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             this.messageComposer.removeContext(value);
         }
         handleRemoveContext(value) {
-            console.log('remove context', value);
             if (typeof this.onContextRemoved === 'function')
                 this.onContextRemoved(value);
         }
@@ -1283,10 +1337,10 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             this.messageComposer.model = this.model;
         }
         render() {
-            return (this.$render("i-vstack", { width: "100%", height: "100%", class: index_css_3.spinnerStyle },
+            return (this.$render("i-vstack", { width: "100%", height: "100%", class: index_css_4.spinnerStyle },
                 this.$render("i-vstack", { id: "messageContainer", background: { color: Theme.background.main }, stack: { grow: "1", basis: "0" }, overflow: { x: 'hidden', y: 'auto' } },
                     this.$render("i-panel", { id: "pnlMessageTop" }),
-                    this.$render("i-vstack", { id: "pnlMessage", class: index_css_3.messagePanelStyle, margin: { top: "auto" }, padding: { top: "1rem", bottom: "1rem", left: "1rem", right: "1rem" }, stack: { grow: "1", basis: "0" } })),
+                    this.$render("i-vstack", { id: "pnlMessage", class: index_css_4.messagePanelStyle, margin: { top: "auto" }, padding: { top: "1rem", bottom: "1rem", left: "1rem", right: "1rem" }, stack: { grow: "1", basis: "0" } })),
                 this.$render("i-vstack", { background: { color: Theme.background.main } },
                     this.$render("i-hstack", { border: { top: { width: 1, style: 'solid', color: Theme.divider } }, mediaQueries: [
                             {

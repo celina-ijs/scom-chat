@@ -100,3 +100,15 @@ export const customHoverStyle = Styles.style({
     }
   }
 });
+
+export const customButtonStyle = Styles.style({
+  $nest: {
+    '> span': {
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      maxWidth: '100%',
+      display: 'block'
+    }
+  }
+});
