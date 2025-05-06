@@ -1,9 +1,13 @@
 {
     "name": "@scom/scom-chat",
     "type": "widget",
-    "version": "0.1.3",
+    "hash": "sha256-l9ejz+DVdcN+r8cDnUSvp8FxY6lYF8MKsarQAwykEB4=",
+    "version": "0.1.4",
     "dependencies": [
         "@ijstech/components",
+        "@ijstech/eth-contract",
+        "@ijstech/eth-wallet",
+        "@ijstech/ln-wallet",
         "@scom/scom-signer",
         "@scom/scom-mqtt",
         "@scom/scom-social-sdk",
