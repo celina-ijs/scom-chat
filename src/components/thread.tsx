@@ -44,19 +44,19 @@ export class ScomChatThread extends Module {
         this.pnlContent.clearInnerHTML();
     }
 
-    addMessages(pubKey: string, info: IGroupedMessage) {
+    addMessages(pubKey: string, info: IGroupedMessage, showTime?: boolean) {
         let isMyThread = pubKey === info.sender;
         this.pnlThread.padding = this.model.isGroup ? { left: '2.25rem', bottom: "1rem" } : { bottom: "1rem" };
         this.pnlThread.alignItems = isMyThread ? "end" : "start";
         this.pnlContent.alignItems = isMyThread ? "end" : "start";
-        this.renderMessages(info, isMyThread, this.model.isGroup);
+        this.renderMessages(info, isMyThread, this.model.isGroup, showTime);
     }
 
-    private async renderMessages(info: IGroupedMessage, isMyThread: boolean, isGroup: boolean) {
+    private async renderMessages(info: IGroupedMessage, isMyThread: boolean, isGroup: boolean, showTime?: boolean) {
         const messages = info.messages;
         let showUserInfo = isGroup && !isMyThread;
         for (let i = 0; i < messages.length; i++) {
-            const showMessageTime = messages[i + 1] ? moment.unix(messages[i + 1].createdAt).diff(moment.unix(messages[i].createdAt)) > 60000 : true;
+            const showMessageTime = messages[i + 1] ? moment.unix(messages[i + 1].createdAt).diff(moment.unix(messages[i].createdAt)) > 60000 : (showTime ?? true);
             const threadMessage = new ScomChatThreadMessage(undefined, { width: '100%' });
             threadMessage.model = this.model;
             threadMessage.onContentRendered = this.onContentRendered;
@@ -195,7 +195,7 @@ export class ScomChatThreadMessage extends Module {
                             }
                             if (this.onContentRendered) this.onContentRendered();
                         });
-                        if (item.module !== '@scom/scom-markdown-editor') {
+                        if (item.module !== '@scom/scom-markdown-editor' && item.module !== '@scom/page-button') {
                             this.pnlThreadMessage.stack = { grow: "1", shrink: "1", basis: "0" };
                         }
                     } else {

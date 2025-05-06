@@ -260,7 +260,7 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         get model(): Model;
         set model(value: Model);
         clear(): void;
-        addMessages(pubKey: string, info: IGroupedMessage): void;
+        addMessages(pubKey: string, info: IGroupedMessage, showTime?: boolean): void;
         private renderMessages;
         init(): void;
         render(): any;

@@ -178,17 +178,16 @@ export class ScomChatMessageComposer extends Module {
         if (this.isPasting) {
             this.isPasting = false;
             const imageRegex = /https?:\/\/[^\s{}]+/gi;
-            const match = value.match(imageRegex);
-            if (match) {
-                const context = match[0];
+            const matches = value.match(imageRegex);
+            for (const context of matches) {
                 if (!this.addedContext.includes(context)) {
                     this.addedContext.push(context);
                     this.appendContext(context, true);
                 }
                 const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
                 target.value = value.replace(urlRegex, (match) => `{${match}}`);
-                this.updateContext(true);
             }
+            this.updateContext(true);
         } else {
             for (const context of this.addedContext) {
                 if (context.startsWith('http') && !value.includes(context)) {
@@ -262,6 +261,7 @@ export class ScomChatMessageComposer extends Module {
     }
 
     public addContext(value: string) {
+        console.log('addContext', value);
         if (!this.addedContext.includes(value)) {
             this.addedContext.push(value);
             this.appendContext(value, false);
