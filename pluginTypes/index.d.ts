@@ -7,6 +7,7 @@ declare module "@scom/scom-chat/index.css.ts" {
     export const customLinkStyle: string;
     export const spinnerStyle: string;
     export const customHoverStyle: string;
+    export const customButtonStyle: string;
 }
 /// <amd-module name="@scom/scom-chat/components/loadingSpinner.tsx" />
 declare module "@scom/scom-chat/components/loadingSpinner.tsx" {
@@ -94,7 +95,7 @@ declare module "@scom/scom-chat/interface.ts" {
 }
 /// <amd-module name="@scom/scom-chat/utils.ts" />
 declare module "@scom/scom-chat/utils.ts" {
-    import { Control } from "@ijstech/components";
+    import { Button, Control } from "@ijstech/components";
     import { INostrMetadata } from "@scom/scom-social-sdk";
     import { IDirectMessage, IGroupedMessage, IPostData } from "@scom/scom-chat/interface.ts";
     export function isDevEnv(): boolean;
@@ -105,6 +106,50 @@ declare module "@scom/scom-chat/utils.ts" {
     export function createLabelElements(text: string, styles?: any): Control[];
     export function groupMessage(messages: IDirectMessage[]): IGroupedMessage[];
     export function constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>): any[];
+    export function createContexts(contexts: string[]): {
+        module: string;
+        data: {
+            properties: {
+                linkButtons: {
+                    caption: string;
+                    maxWidth: string;
+                    background: {
+                        color: string;
+                    };
+                    border: {
+                        radius: string;
+                        style: string;
+                        color: string;
+                        width: string;
+                    };
+                    padding: {
+                        left: string;
+                        right: string;
+                    };
+                    font: {
+                        size: string;
+                    };
+                    icon: {
+                        name: string;
+                        width: string;
+                        height: string;
+                        stack: {
+                            shrink: string;
+                        };
+                    };
+                    class: string;
+                    onClick: (target: Button) => Promise<void>;
+                }[];
+            };
+            tag: {
+                width: string;
+                pt: number;
+                pb: number;
+                pl: number;
+                pr: number;
+            };
+        };
+    };
 }
 /// <amd-module name="@scom/scom-chat/components/mediaPreview.tsx" />
 declare module "@scom/scom-chat/components/mediaPreview.tsx" {
@@ -173,7 +218,7 @@ declare module "@scom/scom-chat/model.ts" {
 declare module "@scom/scom-chat/components/messageComposer.tsx" {
     import { ControlElement, Module } from '@ijstech/components';
     import { Model } from "@scom/scom-chat/model.ts";
-    type onSubmitCallback = (message: string, mediaUrls?: string[], event?: Event) => Promise<void>;
+    type onSubmitCallback = (message: string, mediaUrls?: string[], contexts?: string[], event?: Event) => Promise<void>;
     interface ScomChatMessageComposerElement extends ControlElement {
         onSubmit?: onSubmitCallback;
         onEdit?: () => void;
@@ -205,7 +250,7 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         private gifUrl;
         private scomStorage;
         private _model;
-        private addedContext;
+        private addedContexts;
         private contextEls;
         private isPasting;
         get model(): Model;

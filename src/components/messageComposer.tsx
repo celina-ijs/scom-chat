@@ -21,7 +21,7 @@ import { isDevEnv } from '../utils';
 
 const Theme = Styles.Theme.ThemeVars;
 
-type onSubmitCallback = (message: string, mediaUrls?: string[], event?: Event) => Promise<void>;
+type onSubmitCallback = (message: string, mediaUrls?: string[], contexts?: string[], event?: Event) => Promise<void>;
 
 interface ScomChatMessageComposerElement extends ControlElement {
     onSubmit?: onSubmitCallback;
@@ -58,7 +58,7 @@ export class ScomChatMessageComposer extends Module {
     private scomStorage: ScomStorage;
     private _model: Model;
 
-    private addedContext: string[] = [];
+    private addedContexts: string[] = [];
     private contextEls: Record<string, HStack> = {};
 
     private isPasting: boolean = false;
@@ -180,8 +180,8 @@ export class ScomChatMessageComposer extends Module {
             const imageRegex = /https?:\/\/[^\s{}]+/gi;
             const matches = value.match(imageRegex);
             for (const context of matches) {
-                if (!this.addedContext.includes(context)) {
-                    this.addedContext.push(context);
+                if (!this.addedContexts.includes(context)) {
+                    this.addedContexts.push(context);
                     this.appendContext(context, true);
                 }
                 const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
@@ -189,10 +189,10 @@ export class ScomChatMessageComposer extends Module {
             }
             this.updateContext(true);
         } else {
-            for (const context of this.addedContext) {
+            for (const context of this.addedContexts) {
                 if (context.startsWith('http') && !value.includes(context)) {
                     this.handleRemoveContext(context);
-                    this.addedContext = this.addedContext.filter(item => item !== context);
+                    this.addedContexts = this.addedContexts.filter(item => item !== context);
                 }
             }
             target.value = target.value.replace(/\{\}/g, '');
@@ -203,9 +203,8 @@ export class ScomChatMessageComposer extends Module {
         this.lblContextPlaceholder.visible = false;
         const elem = <i-hstack
             verticalAlignment='center' gap='4px'
-            height={'100%'}
             border={{ radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }}
-            padding={{ left: '0.5rem', right: '0.5rem' }}
+            padding={{ left: '0.5rem', right: '0.5rem', top: '0.15rem', bottom: '0.15rem' }}
             cursor='pointer'
             display='inline-flex'
             maxWidth={'200px'}
@@ -235,7 +234,7 @@ export class ScomChatMessageComposer extends Module {
         if (value && isForced) {
             const regex = new RegExp(`\{${value}\}`, 'g');
             this.edtMessage.value = this.edtMessage.value.replace(regex, '');
-            this.addedContext = this.addedContext.filter(item => item !== value);
+            this.addedContexts = this.addedContexts.filter(item => item !== value);
         }
         const el = this.contextEls[value];
         el?.remove();
@@ -254,16 +253,15 @@ export class ScomChatMessageComposer extends Module {
             for (const key in this.contextEls) {
                 this.contextEls[key]?.remove();
             }
-            this.addedContext = [];
+            this.addedContexts = [];
             this.pnlContext.clearInnerHTML();
             this.contextEls = {};
         }
     }
 
     public addContext(value: string) {
-        console.log('addContext', value);
-        if (!this.addedContext.includes(value)) {
-            this.addedContext.push(value);
+        if (!this.addedContexts.includes(value)) {
+            this.addedContexts.push(value);
             this.appendContext(value, false);
             this.updateContext(true);
         }
@@ -280,7 +278,7 @@ export class ScomChatMessageComposer extends Module {
         if (this.mediaUrl) mediaUrls.push(this.mediaUrl);
         if (gifUrl) mediaUrls.push(gifUrl);
         if (!message.length && !mediaUrls.length) return;
-        if (this.onSubmit) await this.onSubmit(message, mediaUrls, event);
+        if (this.onSubmit) await this.onSubmit(message, mediaUrls, this.addedContexts, event);
         this.removeMedia();
         this.updateContext(false);
     }
@@ -356,7 +354,7 @@ export class ScomChatMessageComposer extends Module {
                 <i-hstack
                     id="pnlContextWrap"
                     verticalAlignment='center'
-                    display='inline-flex' height={'1.5rem'}
+                    display='inline-flex'
                     margin={{top: '0.25rem'}}
                     visible={false}
                 >
