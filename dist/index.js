@@ -682,7 +682,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         }
         appendContext(value, isLink) {
             this.lblContextPlaceholder.visible = false;
-            const elem = this.$render("i-hstack", { verticalAlignment: 'center', gap: '4px', height: '100%', border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, padding: { left: '0.5rem', right: '0.5rem' }, cursor: 'pointer', display: 'inline-flex', maxWidth: '200px', tag: value, class: !isLink ? index_css_2.customHoverStyle : '' },
+            const elem = this.$render("i-hstack", { verticalAlignment: 'center', gap: '4px', border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, padding: { left: '0.5rem', right: '0.5rem', top: '0.15rem', bottom: '0.15rem' }, cursor: 'pointer', display: 'inline-flex', maxWidth: '200px', tag: value, class: !isLink ? index_css_2.customHoverStyle : '' },
                 this.$render("i-icon", { name: isLink ? 'link' : 'file', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5 }),
                 this.$render("i-icon", { name: 'times', width: '0.875rem', height: '0.875rem', stack: { shrink: '0' }, opacity: 0.5, onClick: () => {
                         this.handleRemoveContext(value, true);
@@ -802,7 +802,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                     }
                 ] },
                 this.$render("i-panel", { id: "pnlPreview", minHeight: "auto", visible: false }),
-                this.$render("i-hstack", { id: "pnlContextWrap", verticalAlignment: 'center', display: 'inline-flex', height: '1.5rem', margin: { top: '0.25rem' }, visible: false },
+                this.$render("i-hstack", { id: "pnlContextWrap", verticalAlignment: 'center', display: 'inline-flex', margin: { top: '0.25rem' }, visible: false },
                     this.$render("i-hstack", { id: "pnlContextFixed", verticalAlignment: 'center', padding: { left: '0.5rem', right: '0.5rem' }, border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, cursor: 'pointer', height: '100%', gap: "4px", display: 'inline-flex' },
                         this.$render("i-label", { caption: '@', font: { size: '0.875rem' }, opacity: 0.5 }),
                         this.$render("i-label", { id: "lblContextPlaceholder", caption: 'Add Context', font: { size: '0.75rem' } })),

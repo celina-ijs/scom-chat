@@ -203,9 +203,8 @@ export class ScomChatMessageComposer extends Module {
         this.lblContextPlaceholder.visible = false;
         const elem = <i-hstack
             verticalAlignment='center' gap='4px'
-            height={'100%'}
             border={{ radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }}
-            padding={{ left: '0.5rem', right: '0.5rem' }}
+            padding={{ left: '0.5rem', right: '0.5rem', top: '0.15rem', bottom: '0.15rem' }}
             cursor='pointer'
             display='inline-flex'
             maxWidth={'200px'}
@@ -355,7 +354,7 @@ export class ScomChatMessageComposer extends Module {
                 <i-hstack
                     id="pnlContextWrap"
                     verticalAlignment='center'
-                    display='inline-flex' height={'1.5rem'}
+                    display='inline-flex'
                     margin={{top: '0.25rem'}}
                     visible={false}
                 >
