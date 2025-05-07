@@ -1,8 +1,7 @@
 {
     "name": "@scom/scom-chat",
     "type": "widget",
-    "hash": "sha256-l9ejz+DVdcN+r8cDnUSvp8FxY6lYF8MKsarQAwykEB4=",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "dependencies": [
         "@ijstech/components",
         "@ijstech/eth-contract",
