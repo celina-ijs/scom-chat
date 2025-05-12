@@ -555,7 +555,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         set model(value) {
             this._model = value;
             this.pnlEdit.visible = this.model.isEditShown;
-            this.pnlContextWrap.visible = this.model.isContextShown;
+            this.pnlContextWrap.visible = false; // this.model.isContextShown;
         }
         proccessFile() {
             if (!this.scomStorage) {
