@@ -179,15 +179,17 @@ export class ScomChatMessageComposer extends Module {
             this.isPasting = false;
             const imageRegex = /https?:\/\/[^\s{}]+/gi;
             const matches = value.match(imageRegex);
-            for (const context of matches) {
-                if (!this.addedContexts.includes(context)) {
-                    this.addedContexts.push(context);
-                    this.appendContext(context, true);
+            if (matches) {
+                for (const context of matches) {
+                    if (!this.addedContexts.includes(context)) {
+                        this.addedContexts.push(context);
+                        this.appendContext(context, true);
+                    }
+                    const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
+                    target.value = value.replace(urlRegex, (match) => `{${match}}`);
                 }
-                const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
-                target.value = value.replace(urlRegex, (match) => `{${match}}`);
+                this.updateContext(true);
             }
-            this.updateContext(true);
         } else {
             for (const context of this.addedContexts) {
                 if (context.startsWith('http') && !value.includes(context)) {
@@ -257,6 +259,7 @@ export class ScomChatMessageComposer extends Module {
             this.pnlContext.clearInnerHTML();
             this.contextEls = {};
         }
+        this.pnlContextWrap.visible = !!this.addedContexts?.length;
     }
 
     public addContext(value: string) {
@@ -366,6 +369,7 @@ export class ScomChatMessageComposer extends Module {
                         cursor='pointer'
                         height={'100%'} gap="4px"
                         display='inline-flex'
+                        visible={false}
                     >
                         <i-label caption='@' font={{ size: '0.875rem' }} opacity={0.5}></i-label>
                         <i-label id="lblContextPlaceholder" caption='Add Context' font={{ size: '0.75rem' }}></i-label>

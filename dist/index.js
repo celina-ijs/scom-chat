@@ -660,15 +660,17 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                 this.isPasting = false;
                 const imageRegex = /https?:\/\/[^\s{}]+/gi;
                 const matches = value.match(imageRegex);
-                for (const context of matches) {
-                    if (!this.addedContexts.includes(context)) {
-                        this.addedContexts.push(context);
-                        this.appendContext(context, true);
+                if (matches) {
+                    for (const context of matches) {
+                        if (!this.addedContexts.includes(context)) {
+                            this.addedContexts.push(context);
+                            this.appendContext(context, true);
+                        }
+                        const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
+                        target.value = value.replace(urlRegex, (match) => `{${match}}`);
                     }
-                    const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
-                    target.value = value.replace(urlRegex, (match) => `{${match}}`);
+                    this.updateContext(true);
                 }
-                this.updateContext(true);
             }
             else {
                 for (const context of this.addedContexts) {
@@ -719,6 +721,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                 this.pnlContext.clearInnerHTML();
                 this.contextEls = {};
             }
+            this.pnlContextWrap.visible = !!this.addedContexts?.length;
         }
         addContext(value) {
             if (!this.addedContexts.includes(value)) {
@@ -803,7 +806,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                 ] },
                 this.$render("i-panel", { id: "pnlPreview", minHeight: "auto", visible: false }),
                 this.$render("i-hstack", { id: "pnlContextWrap", verticalAlignment: 'center', display: 'inline-flex', margin: { top: '0.25rem' }, visible: false },
-                    this.$render("i-hstack", { id: "pnlContextFixed", verticalAlignment: 'center', padding: { left: '0.5rem', right: '0.5rem' }, border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, cursor: 'pointer', height: '100%', gap: "4px", display: 'inline-flex' },
+                    this.$render("i-hstack", { id: "pnlContextFixed", verticalAlignment: 'center', padding: { left: '0.5rem', right: '0.5rem' }, border: { radius: '0.25rem', style: 'solid', color: Theme.divider, width: '1px' }, cursor: 'pointer', height: '100%', gap: "4px", display: 'inline-flex', visible: false },
                         this.$render("i-label", { caption: '@', font: { size: '0.875rem' }, opacity: 0.5 }),
                         this.$render("i-label", { id: "lblContextPlaceholder", caption: 'Add Context', font: { size: '0.75rem' } })),
                     this.$render("i-hstack", { id: "pnlContext", margin: { left: '0px' }, verticalAlignment: 'center', gap: '4px', height: '100%', wrap: 'wrap' })),

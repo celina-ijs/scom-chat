@@ -4,9 +4,6 @@
     "version": "0.1.6",
     "dependencies": [
         "@ijstech/components",
-        "@ijstech/eth-contract",
-        "@ijstech/eth-wallet",
-        "@ijstech/ln-wallet",
         "@scom/scom-signer",
         "@scom/scom-mqtt",
         "@scom/scom-social-sdk",
