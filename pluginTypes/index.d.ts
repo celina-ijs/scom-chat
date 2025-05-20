@@ -250,11 +250,14 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         private gifUrl;
         private scomStorage;
         private _model;
+        private _isSending;
         private addedContexts;
         private contextEls;
         private isPasting;
         get model(): Model;
         set model(value: Model);
+        get isSending(): boolean;
+        set isSending(value: boolean);
         private proccessFile;
         private handleAttachmentClick;
         private handleEmojiClick;
@@ -386,6 +389,7 @@ declare module "@scom/scom-chat" {
         private messageComposer;
         private model;
         private _oldMessage;
+        private _isSending;
         private observer;
         private isFetchingMessage;
         onSendMessage: (message: string) => void;
@@ -409,6 +413,8 @@ declare module "@scom/scom-chat" {
         set isEditShown(value: boolean);
         get isContextShown(): boolean;
         set isContextShown(value: boolean);
+        set isSending(value: boolean);
+        get isSending(): boolean;
         constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>): any[];
         clear(): void;
         getData(): IChatInfo;

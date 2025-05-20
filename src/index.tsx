@@ -37,6 +37,7 @@ export class ScomChat extends Module {
     private messageComposer: ScomChatMessageComposer;
     private model: Model;
     private _oldMessage: IDirectMessage;
+    private _isSending: boolean = false;
     private observer: IntersectionObserver;
     private isFetchingMessage: boolean;
     onSendMessage: (message: string) => void;
@@ -112,6 +113,15 @@ export class ScomChat extends Module {
     
     set isContextShown(value: boolean) {
         this.model.isContextShown = value;
+    }
+
+    set isSending(value: boolean) {
+        this._isSending = value;
+        if (this.messageComposer) this.messageComposer.isSending = value;
+    }
+
+    get isSending() {
+        return this._isSending;
     }
 
     constructMessage(content: string, metadataByPubKeyMap: Record<string, INostrMetadata>) {

@@ -57,6 +57,7 @@ export class ScomChatMessageComposer extends Module {
     private gifUrl: string;
     private scomStorage: ScomStorage;
     private _model: Model;
+    private _isSending: boolean = false;
 
     private addedContexts: string[] = [];
     private contextEls: Record<string, HStack> = {};
@@ -71,6 +72,14 @@ export class ScomChatMessageComposer extends Module {
         this._model = value;
         this.pnlEdit.visible = this.model.isEditShown;
         this.pnlContextWrap.visible = false // this.model.isContextShown;
+    }
+
+    get isSending() {
+        return this._isSending;
+    }
+
+    set isSending(value: boolean) {
+        this._isSending = value;
     }
 
     private proccessFile() {
@@ -159,7 +168,7 @@ export class ScomChatMessageComposer extends Module {
     }
 
     private handleKeyDown(target: Input, event: KeyboardEvent) {
-        if (event.key === "v" && (event.ctrlKey || event.shiftKey || event.metaKey)) {
+        if (event.code === "KeyV" && (event.ctrlKey || event.shiftKey || event.metaKey)) {
             this.isPasting = true;
             return;
         }
@@ -185,8 +194,6 @@ export class ScomChatMessageComposer extends Module {
                         this.addedContexts.push(context);
                         this.appendContext(context, true);
                     }
-                    const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
-                    target.value = value.replace(urlRegex, (match) => `{${match}}`);
                 }
                 this.updateContext(true);
             }
@@ -197,7 +204,6 @@ export class ScomChatMessageComposer extends Module {
                     this.addedContexts = this.addedContexts.filter(item => item !== context);
                 }
             }
-            target.value = target.value.replace(/\{\}/g, '');
         }
     }
 
@@ -234,7 +240,7 @@ export class ScomChatMessageComposer extends Module {
 
     private handleRemoveContext(value: string, isForced?: boolean) {
         if (value && isForced) {
-            const regex = new RegExp(`\{${value}\}`, 'g');
+            const regex = new RegExp(`${value}`, 'g');
             this.edtMessage.value = this.edtMessage.value.replace(regex, '');
             this.addedContexts = this.addedContexts.filter(item => item !== value);
         }
@@ -276,7 +282,9 @@ export class ScomChatMessageComposer extends Module {
 
     private async submitMessage(event: Event) {
         const gifUrl = this.gifUrl;
-        const message = this.edtMessage.value.trim();
+        let message = this.edtMessage.value.trim();
+        const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
+        message = message.replace(urlRegex, (match) => `{${match}}`);
         let mediaUrls = [];
         if (this.mediaUrl) mediaUrls.push(this.mediaUrl);
         if (gifUrl) mediaUrls.push(gifUrl);
@@ -287,6 +295,8 @@ export class ScomChatMessageComposer extends Module {
     }
 
     private async handleSubmit(target: Control, event: Event) {
+        if (this.isSending) return;
+
         try {
             this.submitMessage(event);
             this.edtMessage.value = "";
