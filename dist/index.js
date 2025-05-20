@@ -545,6 +545,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
     let ScomChatMessageComposer = class ScomChatMessageComposer extends components_6.Module {
         constructor() {
             super(...arguments);
+            this._isSending = false;
             this.addedContexts = [];
             this.contextEls = {};
             this.isPasting = false;
@@ -556,6 +557,12 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             this._model = value;
             this.pnlEdit.visible = this.model.isEditShown;
             this.pnlContextWrap.visible = false; // this.model.isContextShown;
+        }
+        get isSending() {
+            return this._isSending;
+        }
+        set isSending(value) {
+            this._isSending = value;
         }
         proccessFile() {
             if (!this.scomStorage) {
@@ -749,6 +756,8 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             this.updateContext(false);
         }
         async handleSubmit(target, event) {
+            if (this.isSending)
+                return;
             try {
                 this.submitMessage(event);
                 this.edtMessage.value = "";
@@ -1072,6 +1081,10 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
     exports.ScomChat = void 0;
     const Theme = components_9.Styles.Theme.ThemeVars;
     let ScomChat = class ScomChat extends components_9.Module {
+        constructor() {
+            super(...arguments);
+            this._isSending = false;
+        }
         get interlocutor() {
             return this.model.interlocutor;
         }
@@ -1125,6 +1138,14 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         }
         set isContextShown(value) {
             this.model.isContextShown = value;
+        }
+        set isSending(value) {
+            this._isSending = value;
+            if (this.messageComposer)
+                this.messageComposer.isSending = value;
+        }
+        get isSending() {
+            return this._isSending;
         }
         constructMessage(content, metadataByPubKeyMap) {
             return (0, utils_5.constructMessage)(content, metadataByPubKeyMap);

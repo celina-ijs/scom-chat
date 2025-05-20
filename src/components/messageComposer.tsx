@@ -57,6 +57,7 @@ export class ScomChatMessageComposer extends Module {
     private gifUrl: string;
     private scomStorage: ScomStorage;
     private _model: Model;
+    private _isSending: boolean = false;
 
     private addedContexts: string[] = [];
     private contextEls: Record<string, HStack> = {};
@@ -71,6 +72,14 @@ export class ScomChatMessageComposer extends Module {
         this._model = value;
         this.pnlEdit.visible = this.model.isEditShown;
         this.pnlContextWrap.visible = false // this.model.isContextShown;
+    }
+
+    get isSending() {
+        return this._isSending;
+    }
+
+    set isSending(value: boolean) {
+        this._isSending = value;
     }
 
     private proccessFile() {
@@ -287,6 +296,8 @@ export class ScomChatMessageComposer extends Module {
     }
 
     private async handleSubmit(target: Control, event: Event) {
+        if (this.isSending) return;
+
         try {
             this.submitMessage(event);
             this.edtMessage.value = "";
