@@ -646,7 +646,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             this.mdAttachment.visible = false;
         }
         handleKeyDown(target, event) {
-            if (event.key === "v" && (event.ctrlKey || event.shiftKey || event.metaKey)) {
+            if (event.code === "KeyV" && (event.ctrlKey || event.shiftKey || event.metaKey)) {
                 this.isPasting = true;
                 return;
             }
@@ -673,8 +673,6 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                             this.addedContexts.push(context);
                             this.appendContext(context, true);
                         }
-                        const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
-                        target.value = value.replace(urlRegex, (match) => `{${match}}`);
                     }
                     this.updateContext(true);
                 }
@@ -686,7 +684,6 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                         this.addedContexts = this.addedContexts.filter(item => item !== context);
                     }
                 }
-                target.value = target.value.replace(/\{\}/g, '');
             }
         }
         appendContext(value, isLink) {
@@ -704,7 +701,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         }
         handleRemoveContext(value, isForced) {
             if (value && isForced) {
-                const regex = new RegExp(`\{${value}\}`, 'g');
+                const regex = new RegExp(`${value}`, 'g');
                 this.edtMessage.value = this.edtMessage.value.replace(regex, '');
                 this.addedContexts = this.addedContexts.filter(item => item !== value);
             }
@@ -742,7 +739,9 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         }
         async submitMessage(event) {
             const gifUrl = this.gifUrl;
-            const message = this.edtMessage.value.trim();
+            let message = this.edtMessage.value.trim();
+            const urlRegex = /(?<!{)(https?:\/\/[^\s{}]+)(?!})/g;
+            message = message.replace(urlRegex, (match) => `{${match}}`);
             let mediaUrls = [];
             if (this.mediaUrl)
                 mediaUrls.push(this.mediaUrl);
