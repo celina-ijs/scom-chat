@@ -7,15 +7,18 @@ import {
     VStack,
     moment,
     Panel,
-    Control
+    Control,
+    Button
 } from '@ijstech/components';
 import { Model } from '../model';
-import { createLabelElements, getEmbedElement, getMessageTime, getUserProfile } from '../utils';
+import { createLabelElements, getEmbedElement, getMessageTime } from '../utils';
 import { IGroupedMessage, IPostData } from '../interface';
 import { customLinkStyle, imageStyle, messageStyle } from '../index.css';
 import assets from '../assets';
+import languageJson from '../language.json';
 
 const Theme = Styles.Theme.ThemeVars;
+type onRestoreCallback = (data: any) => Promise<boolean>;
 
 declare global {
     namespace JSX {
@@ -30,7 +33,9 @@ export class ScomChatThread extends Module {
     private pnlThread: VStack;
     private pnlContent: VStack;
     private _model: Model;
+
     onContentRendered:() => void;
+    onRestore: onRestoreCallback;
 
     get model() {
         return this._model;
@@ -44,12 +49,20 @@ export class ScomChatThread extends Module {
         this.pnlContent.clearInnerHTML();
     }
 
+    toggleEnable(value: boolean) {
+        const messages = this.pnlContent.querySelectorAll('i-scom-chat--thread-message');
+        messages.forEach(message => {
+            (message as ScomChatThreadMessage).toggleEnable(value);
+        })
+    }
+
     addMessages(pubKey: string, info: IGroupedMessage, showTime?: boolean) {
         let isMyThread = pubKey === info.sender;
         this.pnlThread.padding = this.model.isGroup ? { left: '2.25rem', bottom: "1rem" } : { bottom: "1rem" };
         this.pnlThread.alignItems = isMyThread ? "end" : "start";
         this.pnlContent.alignItems = isMyThread ? "end" : "start";
         this.renderMessages(info, isMyThread, this.model.isGroup, showTime);
+        if (info?.tag?.changeId) this.classList.add(`change-${info.tag.changeId}`);
     }
 
     private async renderMessages(info: IGroupedMessage, isMyThread: boolean, isGroup: boolean, showTime?: boolean) {
@@ -60,8 +73,11 @@ export class ScomChatThread extends Module {
             const threadMessage = new ScomChatThreadMessage(undefined, { width: '100%' });
             threadMessage.model = this.model;
             threadMessage.onContentRendered = this.onContentRendered;
+            threadMessage.onRestore = this.onRestore;
             this.pnlContent.appendChild(threadMessage);
             await threadMessage.ready();
+            threadMessage.isRestoreShown = info.isRestoreShown;
+            threadMessage.tag = info.tag;
             threadMessage.setData(info.sender, info.pubKey, messages[i], isMyThread, showUserInfo);
             if (showMessageTime) {
                 const msgTime = getMessageTime(messages[i].createdAt);
@@ -103,8 +119,13 @@ export class ScomChatThreadMessage extends Module {
     private pnlContainer: HStack;
     private pnlThreadMessage: HStack;
     private pnlMessage: VStack;
+    private btnRestore: Button;
+
     private _model: Model;
+    private _isRestoreShown: boolean = false;
+
     onContentRendered:() => void;
+    onRestore: onRestoreCallback;
 
     get model() {
         return this._model;
@@ -112,6 +133,15 @@ export class ScomChatThreadMessage extends Module {
 
     set model(value: Model) {
         this._model = value;
+    }
+
+    get isRestoreShown() {
+        return this._isRestoreShown;
+    }
+
+    set isRestoreShown(value: boolean) {
+        this._isRestoreShown = value;
+        if (this.btnRestore) this.btnRestore.visible = value;
     }
 
     setData(sender: string, pubKey: string, message: { contentElements: IPostData[]; createdAt: number; }, isMyThread: boolean, showUserInfo: boolean) {
@@ -214,7 +244,32 @@ export class ScomChatThreadMessage extends Module {
         }
     }
 
+    private async handleRestore(target: Button) {
+        const data = this.tag || {};
+        data.type = target.tag;
+        let result = false;
+        if (typeof this.onRestore === 'function')
+            result = await this.onRestore(data);
+        
+        if (result) {
+            const isRestore = !data.type || data.type === 'restore';
+            this.btnRestore.icon.name = isRestore ? 'redo-alt' : 'undo-alt';
+            this.btnRestore.tooltip.content = isRestore ? '$redo_checkpoint' : '$restore_checkpoint';
+            this.btnRestore.tag = isRestore ? 'redo' : 'restore';
+        }
+    }
+
+    toggleEnable(value: boolean) {
+        this.opacity = value ? 1 : 0.7;
+        this.btnRestore.enabled = value;
+        const buttons = this.pnlMessage.querySelectorAll('i-button');
+        buttons.forEach(button => {
+            (button as Button).enabled = value;
+        })
+    }
+
     init() {
+        this.i18n.init({...languageJson});
         super.init();
     }
 
@@ -232,6 +287,20 @@ export class ScomChatThreadMessage extends Module {
                         stack={{ grow: "1", shrink: "1", basis: "0" }}
                         gap="0.5rem"
                     ></i-vstack>
+                    <i-button
+                        id="btnRestore"
+                        border={{ radius: '0.35rem', style: 'solid', color: Theme.divider, width: '1px' }}
+                        height="1.5rem" width="1.5rem"
+                        font={{ size: '0.75rem' }}
+                        icon={{ name: 'undo-alt', width: '0.675rem', height: '0.675rem', fill: Theme.text.primary, stack: { shrink: '0' } }}
+                        tooltip={{ content: '$restore_checkpoint', placement: 'top' }}
+                        background={{ color: Theme.background.default}}
+                        boxShadow='none'
+                        tag="restore"
+                        bottom="-0.75rem" right="0px"
+                        visible={false}
+                        onClick={this.handleRestore}
+                    ></i-button>
                 </i-hstack>
             </i-hstack>
         )

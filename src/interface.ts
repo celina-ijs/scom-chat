@@ -41,6 +41,8 @@ export interface IGroupedMessage {
 	messages: { contentElements: IPostData[]; createdAt: number; }[];
 	sender: string;
 	pubKey?: string;
+    isRestoreShown?: boolean;
+    tag?: any;
 }
 
 export interface IInterlocutorData {

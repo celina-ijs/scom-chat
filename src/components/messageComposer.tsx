@@ -70,7 +70,6 @@ export class ScomChatMessageComposer extends Module {
 
     set model(value: Model) {
         this._model = value;
-        this.pnlEdit.visible = this.model.isEditShown;
         this.pnlContextWrap.visible = false // this.model.isContextShown;
     }
 
