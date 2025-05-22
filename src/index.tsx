@@ -1,4 +1,4 @@
-import { ControlElement, customElements, Module, Panel, Styles, VStack } from '@ijstech/components';
+import { ControlElement, customElements, HStack, Module, Panel, Styles, VStack } from '@ijstech/components';
 import { messagePanelStyle, spinnerStyle } from './index.css';
 import { LoadingSpinner, ScomChatMessageComposer, ScomChatThread } from './components';
 import { Model } from './model';
@@ -8,12 +8,14 @@ import replyData from './data.json';
 
 const Theme = Styles.Theme.ThemeVars;
 
+type onRestoreCallback = (data: any) => Promise<boolean>;
+
 interface ScomChatElement extends ControlElement {
     isGroup?: boolean;
     isAIChat?: boolean;
-    isEditShown?: boolean;
+    isRestoreShown?: boolean;
     isContextShown?: boolean;
-    onEdit?: () => void;
+    onRestore?: onRestoreCallback;
     onSendMessage?: (message: string) => void;
     onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     onEmbeddedElement?: (module: string,  elm: any) => void;
@@ -38,12 +40,13 @@ export class ScomChat extends Module {
     private model: Model;
     private _oldMessage: IDirectMessage;
     private _isSending: boolean = false;
+    private _isRestoreShown: boolean = false;
     private observer: IntersectionObserver;
     private isFetchingMessage: boolean;
     onSendMessage: (message: string) => void;
     onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
     onEmbeddedElement: (module: string,  elm: any) => void;
-    onEdit: () => void;
+    onRestore: onRestoreCallback;
     onContextRemoved: (value: string) => void;
 
     get interlocutor() {
@@ -99,12 +102,12 @@ export class ScomChat extends Module {
         this.model.isAIChat = value;
     }
 
-    get isEditShown() {
-        return this.model.isEditShown;
+    get isRestoreShown() {
+        return this._isRestoreShown;
     }
 
-    set isEditShown(value: boolean) {
-        this.model.isEditShown = value;
+    set isRestoreShown(value: boolean) {
+        this._isRestoreShown = value;
     }
 
     get isContextShown() {
@@ -179,6 +182,7 @@ export class ScomChat extends Module {
         thread.onContentRendered = () => {
             if (!isPrepend) this.scrollToBottom();
         }
+        thread.onRestore = this.onRestore;
         await thread.ready();
         thread.addMessages(pubKey, info);
         if (isPrepend)
@@ -249,13 +253,15 @@ export class ScomChat extends Module {
         const createdAt = Math.round(Date.now() / 1000);
         const newMessage: IGroupedMessage = {
             messages: [],
-            sender: npub
+            sender: npub,
+            isRestoreShown: this.isRestoreShown
         };
         const messages = mediaUrls ? [...mediaUrls] : [];
         if (message) messages.push(message);
         for (let msg of messages) {
             newMessage.messages.push(this._constructMessage(msg, createdAt, contexts));
             if (this.onSendMessage) this.onSendMessage(msg);
+            newMessage.tag = this.tag;
         }
         this.addThread(npub, newMessage);
         if (this.isAIChat) setTimeout(() => this.handleAutoReply(message), 300);
@@ -312,10 +318,6 @@ export class ScomChat extends Module {
         if (this.onEmbeddedElement) this.onEmbeddedElement(module, elm);
     }
 
-    private handleEdit() {
-        if (typeof this.onEdit === 'function') this.onEdit();
-    }
-
     addContext(value: string) {
         this.messageComposer.addContext(value);
     }
@@ -336,8 +338,8 @@ export class ScomChat extends Module {
         if (isGroup != null) this.isGroup = isGroup;
         const isAIChat = this.getAttribute('isAIChat', true);
         if (isAIChat != null) this.isAIChat = isAIChat;
-        const isEditShown = this.getAttribute('isEditShown', true);
-        if (isEditShown != null) this.isEditShown = isEditShown;
+        const isRestoreShown = this.getAttribute('isRestoreShown', true);
+        if (isRestoreShown != null) this.isRestoreShown = isRestoreShown;
         const isContextShown = this.getAttribute('isContextShown', true);
         if (isContextShown != null) this.isContextShown = isContextShown;
         this.model.onEmbeddedElement = this.handleEmbeddedElement.bind(this);
@@ -381,7 +383,6 @@ export class ScomChat extends Module {
                             width="100%"
                             margin={{ top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }}
                             onSubmit={this.handleSendMessage}
-                            onEdit={this.handleEdit}
                             onContextRemoved={this.handleRemoveContext}
                         ></i-scom-chat--message-composer>
                     </i-hstack>

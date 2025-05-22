@@ -449,7 +449,6 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
             this._extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'tiff', 'tif', 'mp4', 'webm', 'ogg', 'avi', 'mkv', 'mov', 'm3u8'];
             this._isGroup = false;
             this._isAIChat = false;
-            this._isEditShown = false;
             this._isContextShown = false;
             this._widgetMap = new Map(); // eventId: module
         }
@@ -501,12 +500,6 @@ define("@scom/scom-chat/model.ts", ["require", "exports", "@ijstech/components",
         get widgetMap() {
             return this._widgetMap;
         }
-        get isEditShown() {
-            return this._isEditShown;
-        }
-        set isEditShown(value) {
-            this._isEditShown = value;
-        }
         get isContextShown() {
             return this._isContextShown;
         }
@@ -555,7 +548,6 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         }
         set model(value) {
             this._model = value;
-            this.pnlEdit.visible = this.model.isEditShown;
             this.pnlContextWrap.visible = false; // this.model.isContextShown;
         }
         get isSending() {
@@ -881,7 +873,26 @@ define("@scom/scom-chat/assets.ts", ["require", "exports", "@ijstech/components"
         fullPath
     };
 });
-define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-chat/utils.ts", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/assets.ts"], function (require, exports, components_8, utils_4, index_css_3, assets_1) {
+define("@scom/scom-chat/language.json.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ///<amd-module name='@scom/scom-chat/language.json.ts'/> 
+    exports.default = {
+        "en": {
+            "restore_checkpoint": "Restore checkpoint",
+            "redo_checkpoint": "Redo checkpoint"
+        },
+        "zh-hant": {
+            "restore_checkpoint": "恢復檢查點",
+            "redo_checkpoint": "重做檢查點"
+        },
+        "vi": {
+            "restore_checkpoint": "Hoàn tác",
+            "redo_checkpoint": "Làm lại"
+        }
+    };
+});
+define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-chat/utils.ts", "@scom/scom-chat/index.css.ts", "@scom/scom-chat/assets.ts", "@scom/scom-chat/language.json.ts"], function (require, exports, components_8, utils_4, index_css_3, assets_1, language_json_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomChatThreadMessage = exports.ScomChatThread = void 0;
@@ -896,12 +907,20 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
         clear() {
             this.pnlContent.clearInnerHTML();
         }
+        toggleEnable(value) {
+            const messages = this.pnlContent.querySelectorAll('i-scom-chat--thread-message');
+            messages.forEach(message => {
+                message.toggleEnable(value);
+            });
+        }
         addMessages(pubKey, info, showTime) {
             let isMyThread = pubKey === info.sender;
             this.pnlThread.padding = this.model.isGroup ? { left: '2.25rem', bottom: "1rem" } : { bottom: "1rem" };
             this.pnlThread.alignItems = isMyThread ? "end" : "start";
             this.pnlContent.alignItems = isMyThread ? "end" : "start";
             this.renderMessages(info, isMyThread, this.model.isGroup, showTime);
+            if (info?.tag?.changeId)
+                this.classList.add(`change-${info.tag.changeId}`);
         }
         async renderMessages(info, isMyThread, isGroup, showTime) {
             const messages = info.messages;
@@ -911,8 +930,11 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                 const threadMessage = new ScomChatThreadMessage(undefined, { width: '100%' });
                 threadMessage.model = this.model;
                 threadMessage.onContentRendered = this.onContentRendered;
+                threadMessage.onRestore = this.onRestore;
                 this.pnlContent.appendChild(threadMessage);
                 await threadMessage.ready();
+                threadMessage.isRestoreShown = info.isRestoreShown;
+                threadMessage.tag = info.tag;
                 threadMessage.setData(info.sender, info.pubKey, messages[i], isMyThread, showUserInfo);
                 if (showMessageTime) {
                     const msgTime = (0, utils_4.getMessageTime)(messages[i].createdAt);
@@ -943,11 +965,23 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
     ], ScomChatThread);
     exports.ScomChatThread = ScomChatThread;
     let ScomChatThreadMessage = class ScomChatThreadMessage extends components_8.Module {
+        constructor() {
+            super(...arguments);
+            this._isRestoreShown = false;
+        }
         get model() {
             return this._model;
         }
         set model(value) {
             this._model = value;
+        }
+        get isRestoreShown() {
+            return this._isRestoreShown;
+        }
+        set isRestoreShown(value) {
+            this._isRestoreShown = value;
+            if (this.btnRestore)
+                this.btnRestore.visible = value;
         }
         setData(sender, pubKey, message, isMyThread, showUserInfo) {
             this.pnlContainer.justifyContent = isMyThread ? 'end' : 'start';
@@ -1032,13 +1066,36 @@ define("@scom/scom-chat/components/thread.tsx", ["require", "exports", "@ijstech
                 window.open(`#!/p/${pubKey}`, '_self');
             }
         }
+        async handleRestore(target) {
+            const data = this.tag || {};
+            data.type = target.tag;
+            let result = false;
+            if (typeof this.onRestore === 'function')
+                result = await this.onRestore(data);
+            if (result) {
+                const isRestore = !data.type || data.type === 'restore';
+                this.btnRestore.icon.name = isRestore ? 'redo-alt' : 'undo-alt';
+                this.btnRestore.tooltip.content = isRestore ? '$redo_checkpoint' : '$restore_checkpoint';
+                this.btnRestore.tag = isRestore ? 'redo' : 'restore';
+            }
+        }
+        toggleEnable(value) {
+            this.opacity = value ? 1 : 0.7;
+            this.btnRestore.enabled = value;
+            const buttons = this.pnlMessage.querySelectorAll('i-button');
+            buttons.forEach(button => {
+                button.enabled = value;
+            });
+        }
         init() {
+            this.i18n.init({ ...language_json_1.default });
             super.init();
         }
         render() {
             return (this.$render("i-hstack", { id: "pnlContainer", width: "100%", gap: "0.25rem", stack: { grow: "1", shrink: "1", basis: "0" } },
                 this.$render("i-hstack", { id: "pnlThreadMessage", position: "relative", maxWidth: "100%", stack: { shrink: "1" } },
-                    this.$render("i-vstack", { id: "pnlMessage", class: index_css_3.messageStyle, maxWidth: "100%", padding: { top: "0.75rem", bottom: "0.75rem", left: "0.75rem", right: "0.75rem" }, lineHeight: "1.3125rem", overflow: "hidden", stack: { grow: "1", shrink: "1", basis: "0" }, gap: "0.5rem" }))));
+                    this.$render("i-vstack", { id: "pnlMessage", class: index_css_3.messageStyle, maxWidth: "100%", padding: { top: "0.75rem", bottom: "0.75rem", left: "0.75rem", right: "0.75rem" }, lineHeight: "1.3125rem", overflow: "hidden", stack: { grow: "1", shrink: "1", basis: "0" }, gap: "0.5rem" }),
+                    this.$render("i-button", { id: "btnRestore", border: { radius: '0.35rem', style: 'solid', color: Theme.divider, width: '1px' }, height: "1.5rem", width: "1.5rem", font: { size: '0.75rem' }, icon: { name: 'undo-alt', width: '0.675rem', height: '0.675rem', fill: Theme.text.primary, stack: { shrink: '0' } }, tooltip: { content: '$restore_checkpoint', placement: 'top' }, background: { color: Theme.background.default }, boxShadow: 'none', tag: "restore", bottom: "-0.75rem", right: "0px", visible: false, onClick: this.handleRestore }))));
         }
     };
     ScomChatThreadMessage = __decorate([
@@ -1083,6 +1140,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         constructor() {
             super(...arguments);
             this._isSending = false;
+            this._isRestoreShown = false;
         }
         get interlocutor() {
             return this.model.interlocutor;
@@ -1126,11 +1184,11 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         set isAIChat(value) {
             this.model.isAIChat = value;
         }
-        get isEditShown() {
-            return this.model.isEditShown;
+        get isRestoreShown() {
+            return this._isRestoreShown;
         }
-        set isEditShown(value) {
-            this.model.isEditShown = value;
+        set isRestoreShown(value) {
+            this._isRestoreShown = value;
         }
         get isContextShown() {
             return this.model.isContextShown;
@@ -1194,6 +1252,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                 if (!isPrepend)
                     this.scrollToBottom();
             };
+            thread.onRestore = this.onRestore;
             await thread.ready();
             thread.addMessages(pubKey, info);
             if (isPrepend)
@@ -1262,7 +1321,8 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             const createdAt = Math.round(Date.now() / 1000);
             const newMessage = {
                 messages: [],
-                sender: npub
+                sender: npub,
+                isRestoreShown: this.isRestoreShown
             };
             const messages = mediaUrls ? [...mediaUrls] : [];
             if (message)
@@ -1271,6 +1331,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                 newMessage.messages.push(this._constructMessage(msg, createdAt, contexts));
                 if (this.onSendMessage)
                     this.onSendMessage(msg);
+                newMessage.tag = this.tag;
             }
             this.addThread(npub, newMessage);
             if (this.isAIChat)
@@ -1324,10 +1385,6 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             if (this.onEmbeddedElement)
                 this.onEmbeddedElement(module, elm);
         }
-        handleEdit() {
-            if (typeof this.onEdit === 'function')
-                this.onEdit();
-        }
         addContext(value) {
             this.messageComposer.addContext(value);
         }
@@ -1348,9 +1405,9 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
             const isAIChat = this.getAttribute('isAIChat', true);
             if (isAIChat != null)
                 this.isAIChat = isAIChat;
-            const isEditShown = this.getAttribute('isEditShown', true);
-            if (isEditShown != null)
-                this.isEditShown = isEditShown;
+            const isRestoreShown = this.getAttribute('isRestoreShown', true);
+            if (isRestoreShown != null)
+                this.isRestoreShown = isRestoreShown;
             const isContextShown = this.getAttribute('isContextShown', true);
             if (isContextShown != null)
                 this.isContextShown = isContextShown;
@@ -1373,7 +1430,7 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
                                 }
                             }
                         ] },
-                        this.$render("i-scom-chat--message-composer", { id: "messageComposer", width: "100%", margin: { top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }, onSubmit: this.handleSendMessage, onEdit: this.handleEdit, onContextRemoved: this.handleRemoveContext })))));
+                        this.$render("i-scom-chat--message-composer", { id: "messageComposer", width: "100%", margin: { top: '0.375rem', bottom: '0.375rem', left: '0.5rem', right: '0.5rem' }, onSubmit: this.handleSendMessage, onContextRemoved: this.handleRemoveContext })))));
         }
     };
     ScomChat = __decorate([

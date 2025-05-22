@@ -76,6 +76,8 @@ declare module "@scom/scom-chat/interface.ts" {
         }[];
         sender: string;
         pubKey?: string;
+        isRestoreShown?: boolean;
+        tag?: any;
     }
     export interface IInterlocutorData {
         id: string;
@@ -186,7 +188,6 @@ declare module "@scom/scom-chat/model.ts" {
         private _extensions;
         private _isGroup;
         private _isAIChat;
-        private _isEditShown;
         private _isContextShown;
         private _widgetMap;
         onEmbeddedElement: (module: string, elm: any) => void;
@@ -204,8 +205,6 @@ declare module "@scom/scom-chat/model.ts" {
         set metadataByPubKeyMap(map: Record<string, INostrMetadata>);
         get dataManager(): any;
         get widgetMap(): Map<string, any>;
-        get isEditShown(): boolean;
-        set isEditShown(value: boolean);
         get isContextShown(): boolean;
         set isContextShown(value: boolean);
         getData(): IChatInfo;
@@ -288,11 +287,30 @@ declare module "@scom/scom-chat/assets.ts" {
     };
     export default _default;
 }
+/// <amd-module name="@scom/scom-chat/language.json.ts" />
+declare module "@scom/scom-chat/language.json.ts" {
+    const _default_1: {
+        en: {
+            restore_checkpoint: string;
+            redo_checkpoint: string;
+        };
+        "zh-hant": {
+            restore_checkpoint: string;
+            redo_checkpoint: string;
+        };
+        vi: {
+            restore_checkpoint: string;
+            redo_checkpoint: string;
+        };
+    };
+    export default _default_1;
+}
 /// <amd-module name="@scom/scom-chat/components/thread.tsx" />
 declare module "@scom/scom-chat/components/thread.tsx" {
     import { ControlElement, Module } from '@ijstech/components';
     import { Model } from "@scom/scom-chat/model.ts";
     import { IGroupedMessage, IPostData } from "@scom/scom-chat/interface.ts";
+    type onRestoreCallback = (data: any) => Promise<boolean>;
     global {
         namespace JSX {
             interface IntrinsicElements {
@@ -305,9 +323,11 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         private pnlContent;
         private _model;
         onContentRendered: () => void;
+        onRestore: onRestoreCallback;
         get model(): Model;
         set model(value: Model);
         clear(): void;
+        toggleEnable(value: boolean): void;
         addMessages(pubKey: string, info: IGroupedMessage, showTime?: boolean): void;
         private renderMessages;
         init(): void;
@@ -317,10 +337,15 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         private pnlContainer;
         private pnlThreadMessage;
         private pnlMessage;
+        private btnRestore;
         private _model;
+        private _isRestoreShown;
         onContentRendered: () => void;
+        onRestore: onRestoreCallback;
         get model(): Model;
         set model(value: Model);
+        get isRestoreShown(): boolean;
+        set isRestoreShown(value: boolean);
         setData(sender: string, pubKey: string, message: {
             contentElements: IPostData[];
             createdAt: number;
@@ -329,6 +354,8 @@ declare module "@scom/scom-chat/components/thread.tsx" {
         private appendLabel;
         private renderMessageContent;
         private viewUserProfile;
+        private handleRestore;
+        toggleEnable(value: boolean): void;
         init(): void;
         render(): any;
     }
@@ -342,7 +369,7 @@ declare module "@scom/scom-chat/components/index.ts" {
 }
 /// <amd-module name="@scom/scom-chat/data.json.ts" />
 declare module "@scom/scom-chat/data.json.ts" {
-    const _default_1: {
+    const _default_2: {
         hi: string;
         hello: string;
         bye: string;
@@ -356,19 +383,20 @@ declare module "@scom/scom-chat/data.json.ts" {
         "what is the most spoken language in the world?": string;
         "what gets wetter the more it dries?": string;
     };
-    export default _default_1;
+    export default _default_2;
 }
 /// <amd-module name="@scom/scom-chat" />
 declare module "@scom/scom-chat" {
     import { ControlElement, Module } from '@ijstech/components';
     import { ScomChatThread } from "@scom/scom-chat/components/index.ts";
     import { IChatInfo, IDirectMessage, IInterlocutorData, INostrMetadata } from "@scom/scom-chat/interface.ts";
+    type onRestoreCallback = (data: any) => Promise<boolean>;
     interface ScomChatElement extends ControlElement {
         isGroup?: boolean;
         isAIChat?: boolean;
-        isEditShown?: boolean;
+        isRestoreShown?: boolean;
         isContextShown?: boolean;
-        onEdit?: () => void;
+        onRestore?: onRestoreCallback;
         onSendMessage?: (message: string) => void;
         onFetchMessage?: (since?: number, until?: number) => Promise<IDirectMessage[]>;
         onEmbeddedElement?: (module: string, elm: any) => void;
@@ -390,12 +418,13 @@ declare module "@scom/scom-chat" {
         private model;
         private _oldMessage;
         private _isSending;
+        private _isRestoreShown;
         private observer;
         private isFetchingMessage;
         onSendMessage: (message: string) => void;
         onFetchMessage: (since?: number, until?: number) => Promise<IDirectMessage[]>;
         onEmbeddedElement: (module: string, elm: any) => void;
-        onEdit: () => void;
+        onRestore: onRestoreCallback;
         onContextRemoved: (value: string) => void;
         get interlocutor(): IInterlocutorData;
         set interlocutor(value: IInterlocutorData);
@@ -409,8 +438,8 @@ declare module "@scom/scom-chat" {
         set isGroup(value: boolean);
         get isAIChat(): boolean;
         set isAIChat(value: boolean);
-        get isEditShown(): boolean;
-        set isEditShown(value: boolean);
+        get isRestoreShown(): boolean;
+        set isRestoreShown(value: boolean);
         get isContextShown(): boolean;
         set isContextShown(value: boolean);
         set isSending(value: boolean);
@@ -437,7 +466,6 @@ declare module "@scom/scom-chat" {
             npub: any;
         }>;
         private handleEmbeddedElement;
-        private handleEdit;
         addContext(value: string): void;
         removeContext(value: string): void;
         private handleRemoveContext;
