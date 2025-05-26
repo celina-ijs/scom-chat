@@ -277,6 +277,7 @@ export class ScomChatMessageComposer extends Module {
 
     public removeContext(value: string) {
         this.handleRemoveContext(value, true);
+        if (typeof this.onContextRemoved === 'function') this.onContextRemoved(value);
     }
 
     private async submitMessage(event: Event) {
