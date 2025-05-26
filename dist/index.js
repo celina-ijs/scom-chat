@@ -728,6 +728,8 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
         }
         removeContext(value) {
             this.handleRemoveContext(value, true);
+            if (typeof this.onContextRemoved === 'function')
+                this.onContextRemoved(value);
         }
         async submitMessage(event) {
             const gifUrl = this.gifUrl;
