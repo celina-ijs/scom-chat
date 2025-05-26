@@ -1,6 +1,6 @@
 {
     "name": "@scom/scom-chat",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "main": "dist/index.js",
     "plugin": "dist",
     "pluginTypes": "pluginTypes/index.d.ts",
