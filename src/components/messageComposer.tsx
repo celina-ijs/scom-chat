@@ -50,6 +50,7 @@ export class ScomChatMessageComposer extends Module {
     private pnlContextWrap: Panel;
     private lblContextPlaceholder: Label;
     private pnlContext: HStack;
+    private pnlSend: HStack;
     public onSubmit: onSubmitCallback;
     public onEdit: () => void;
     public onContextRemoved: (value: string) => void;
@@ -292,6 +293,11 @@ export class ScomChatMessageComposer extends Module {
         if (this.onSubmit) await this.onSubmit(message, mediaUrls, this.addedContexts, event);
         this.removeMedia();
         this.updateContext(false);
+    }
+
+    setMessage(message: string) {
+        this.edtMessage.value = message;
+        this.pnlSend.click();
     }
 
     private async handleSubmit(target: Control, event: Event) {
@@ -557,6 +563,7 @@ export class ScomChatMessageComposer extends Module {
                         ></i-input>
                     </i-hstack>
                     <i-hstack
+                        id="pnlSend"
                         width="2rem"
                         height="2rem"
                         border={{ radius: '50%' }}
