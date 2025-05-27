@@ -242,6 +242,7 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         private pnlContextWrap;
         private lblContextPlaceholder;
         private pnlContext;
+        private pnlSend;
         onSubmit: onSubmitCallback;
         onEdit: () => void;
         onContextRemoved: (value: string) => void;
@@ -269,6 +270,7 @@ declare module "@scom/scom-chat/components/messageComposer.tsx" {
         addContext(value: string): void;
         removeContext(value: string): void;
         private submitMessage;
+        setMessage(message: string): void;
         private handleSubmit;
         private addMedia;
         private removeMedia;
@@ -468,6 +470,7 @@ declare module "@scom/scom-chat" {
         private handleEmbeddedElement;
         addContext(value: string): void;
         removeContext(value: string): void;
+        sendMessage(message: string): void;
         private handleRemoveContext;
         init(): void;
         render(): any;

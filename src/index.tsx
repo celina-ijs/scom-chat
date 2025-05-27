@@ -326,6 +326,10 @@ export class ScomChat extends Module {
         this.messageComposer.removeContext(value);
     }
 
+    sendMessage(message: string) {
+        this.messageComposer.setMessage(message);
+    }
+
     private handleRemoveContext(value: string) {
         if (typeof this.onContextRemoved === 'function') this.onContextRemoved(value);
     }

@@ -748,6 +748,10 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
             this.removeMedia();
             this.updateContext(false);
         }
+        setMessage(message) {
+            this.edtMessage.value = message;
+            this.pnlSend.click();
+        }
         async handleSubmit(target, event) {
             if (this.isSending)
                 return;
@@ -854,7 +858,7 @@ define("@scom/scom-chat/components/messageComposer.tsx", ["require", "exports", 
                             this.$render("i-scom-emoji-picker", { id: "emojiPicker", onEmojiSelected: this.handleSelectedEmoji }))),
                     this.$render("i-hstack", { verticalAlignment: "center", stack: { grow: "1" } },
                         this.$render("i-input", { id: "edtMessage", width: "100%", height: "auto", maxHeight: 130, display: "flex", rows: 1, padding: { left: '0.25rem', right: '0.25rem' }, border: { style: 'none' }, placeholder: "$type_a_message", inputType: "textarea", resize: 'auto-grow', background: { color: 'transparent' }, onKeyDown: this.handleKeyDown, onChanged: this.handleChanged })),
-                    this.$render("i-hstack", { width: "2rem", height: "2rem", border: { radius: '50%' }, horizontalAlignment: "center", verticalAlignment: "center", cursor: "pointer", hover: { backgroundColor: "#C16FFF26" }, onClick: this.handleSubmit, tooltip: { content: '$send', placement: 'top' } },
+                    this.$render("i-hstack", { id: "pnlSend", width: "2rem", height: "2rem", border: { radius: '50%' }, horizontalAlignment: "center", verticalAlignment: "center", cursor: "pointer", hover: { backgroundColor: "#C16FFF26" }, onClick: this.handleSubmit, tooltip: { content: '$send', placement: 'top' } },
                         this.$render("i-icon", { width: "1rem", height: "1rem", name: 'paper-plane', fill: "#C16FFF" })))));
         }
     };
@@ -1392,6 +1396,9 @@ define("@scom/scom-chat", ["require", "exports", "@ijstech/components", "@scom/s
         }
         removeContext(value) {
             this.messageComposer.removeContext(value);
+        }
+        sendMessage(message) {
+            this.messageComposer.setMessage(message);
         }
         handleRemoveContext(value) {
             if (typeof this.onContextRemoved === 'function')
